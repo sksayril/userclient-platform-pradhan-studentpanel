@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { loginUser } from '../../services/api';
 
 interface LoginProps {
   onLogin: (email: string) => void;
@@ -16,11 +17,29 @@ export default function Login({ onLogin, onSwitchToSignup }: LoginProps) {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      onLogin(email);
+    try {
+      const formData = { email, password };
+      const data = await loginUser(formData);
+      if (data && data.data && data.data.token && data.data.student) {
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('student', JSON.stringify(data.data.student));
+        console.log('Login successful, token and student data stored.');
+        onLogin(formData.email);
+      } else {
+        throw new Error('Login successful but no token was provided.');
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert('An unexpected error occurred.');
+      }
+      // Clear fields on failed login
+      setEmail('');
+      setPassword('');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -32,7 +51,7 @@ export default function Login({ onLogin, onSwitchToSignup }: LoginProps) {
               <Mail className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
-            <p className="text-gray-600">Sign in to your account</p>
+            <p className="text-gray-600">Login in to your account</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -82,7 +101,7 @@ export default function Login({ onLogin, onSwitchToSignup }: LoginProps) {
               disabled={isLoading}
               className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? 'Logging in...' : 'Login'}
             </button>
           </form>
 
@@ -93,7 +112,7 @@ export default function Login({ onLogin, onSwitchToSignup }: LoginProps) {
                 onClick={onSwitchToSignup}
                 className="text-blue-600 font-semibold hover:underline"
               >
-                Sign up
+                Login in 
               </button>
             </p>
           </div>

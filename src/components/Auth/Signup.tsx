@@ -1,19 +1,31 @@
 import React, { useState } from 'react';
 import { User, Mail, Lock, Eye, EyeOff, Phone } from 'lucide-react';
+import { signupUser } from '../../services/api';
 
 interface SignupProps {
   onSignup: (email: string) => void;
   onSwitchToLogin: () => void;
 }
 
+const initialFormData = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  dateOfBirth: '',
+  gender: 'male',
+  address: {
+    street: '',
+    city: '',
+    state: '',
+    pincode: ''
+  },
+  password: '',
+  confirmPassword: ''
+};
+
 export default function Signup({ onSignup, onSwitchToLogin }: SignupProps) {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: ''
-  });
+  const [formData, setFormData] = useState(initialFormData);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -27,11 +39,26 @@ export default function Signup({ onSignup, onSwitchToLogin }: SignupProps) {
     
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      onSignup(formData.email);
+    try {
+      const data = await signupUser(formData);
+      if (data && data.data && data.data.token && data.data.student) {
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('student', JSON.stringify(data.data.student));
+        console.log('Signup successful, token and student data stored.');
+        onSignup(formData.email);
+        setFormData(initialFormData);
+      } else {
+        throw new Error('Signup successful but no token was provided.');
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert('An unexpected error occurred.');
+      }
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,17 +85,29 @@ export default function Signup({ onSignup, onSwitchToLogin }: SignupProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Full Name
               </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
-                  placeholder="Enter your full name"
-                  required
-                />
+              <div className="flex gap-4 mb-4">
+                <div className="relative w-1/2">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input 
+                    type="text" 
+                    placeholder="First Name" 
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="relative w-1/2">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input 
+                    type="text" 
+                    placeholder="Last Name" 
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                    required
+                  />
+                </div>
               </div>
             </div>
 
@@ -94,15 +133,95 @@ export default function Signup({ onSignup, onSwitchToLogin }: SignupProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Phone Number
               </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
+              <div className="relative mb-4">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input 
+                  type="tel" 
+                  placeholder="Phone Number" 
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
-                  placeholder="Enter your phone number"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date of Birth
+              </label>
+              <div className="relative mb-4">
+                <input 
+                  type="date" 
+                  placeholder="Date of Birth" 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                  value={formData.dateOfBirth}
+                  onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Gender
+              </label>
+              <div className="relative mb-4">
+                <select 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                  value={formData.gender}
+                  onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Address
+              </label>
+              <div className="relative mb-4">
+                <input 
+                  type="text" 
+                  placeholder="Street" 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                  value={formData.address.street}
+                  onChange={(e) => setFormData({...formData, address: {...formData.address, street: e.target.value}})}
+                  required
+                />
+              </div>
+              <div className="flex gap-4 mb-4">
+                <div className="relative w-1/2">
+                  <input 
+                    type="text" 
+                    placeholder="City" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                    value={formData.address.city}
+                    onChange={(e) => setFormData({...formData, address: {...formData.address, city: e.target.value}})}
+                    required
+                  />
+                </div>
+                <div className="relative w-1/2">
+                  <input 
+                    type="text" 
+                    placeholder="State" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                    value={formData.address.state}
+                    onChange={(e) => setFormData({...formData, address: {...formData.address, state: e.target.value}})}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="relative mb-4">
+                <input 
+                  type="text" 
+                  placeholder="Pincode" 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                  value={formData.address.pincode}
+                  onChange={(e) => setFormData({...formData, address: {...formData.address, pincode: e.target.value}})}
                   required
                 />
               </div>

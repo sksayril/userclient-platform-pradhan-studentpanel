@@ -1,11 +1,10 @@
-import React from 'react';
-import { DollarSign, Users, BookOpen, TrendingUp, Calendar, Award } from 'lucide-react';
+import { DollarSign, Users, BookOpen, TrendingUp, Calendar, Award, LogOut } from 'lucide-react';
 
 interface DashboardProps {
-  studentEmail: string;
+  onLogout: () => void;
 }
 
-export default function Dashboard({ studentEmail }: DashboardProps) {
+export default function Dashboard({ onLogout }: DashboardProps) {
   const studentData = {
     name: 'John Doe',
     totalFeesPaid: 15000,
@@ -49,11 +48,20 @@ export default function Dashboard({ studentEmail }: DashboardProps) {
   return (
     <div className="p-4 pb-20 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">
-          Welcome back, {studentData.name}!
-        </h1>
-        <p className="text-gray-600">Here's your learning progress</p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            Welcome back, {studentData.name}!
+          </h1>
+          <p className="text-gray-600">Here's your learning progress</p>
+        </div>
+        <button 
+          onClick={onLogout}
+          className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg flex items-center transition-colors"
+        >
+          <LogOut className="w-5 h-5 mr-2" />
+          Logout
+        </button>
       </div>
 
       {/* Stats Grid */}
