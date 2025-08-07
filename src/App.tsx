@@ -15,8 +15,8 @@ import { getKycStatus } from './services/api';
 type AppTab = 'dashboard' | 'courses' | 'profile' | 'fees' | 'batch';
 
 function App() {
-  // A simple auth check. In a real app, this would be more robust.
-  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+  // Check authentication status - start with false to always show login first
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isKycApproved, setIsKycApproved] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -26,7 +26,9 @@ function App() {
   useEffect(() => {
     const checkStatus = async () => {
       const token = localStorage.getItem('token');
-      if (isAuthenticated && token) {
+      if (token) {
+        // If token exists, set authenticated and check KYC status
+        setIsAuthenticated(true);
         try {
           const response = await getKycStatus(token);
           if (response?.data?.isKycApproved) {
@@ -34,46 +36,71 @@ function App() {
           }
         } catch (error) {
           console.error("Failed to fetch KYC status", error);
+          // If token is invalid, clear it and stay unauthenticated
+          localStorage.removeItem('token');
+          localStorage.removeItem('studentEmail');
+          localStorage.removeItem('student');
+          setIsAuthenticated(false);
         }
       }
       setLoading(false);
     };
     checkStatus();
-  }, [isAuthenticated]);
+  }, []); // Remove dependency on isAuthenticated to prevent loops
 
+  // Redirect logic based on authentication and KYC status
   useEffect(() => {
-    if (!loading && isKycApproved && location.pathname === '/kyc') {
-      navigate('/');
+    if (!loading) {
+      if (!isAuthenticated) {
+        // If not authenticated, always redirect to login (except signup page)
+        if (location.pathname !== '/login' && location.pathname !== '/signup') {
+          navigate('/login');
+        }
+      } else if (isAuthenticated && !isKycApproved) {
+        // If authenticated but KYC not approved, redirect to KYC
+        if (location.pathname !== '/kyc') {
+          navigate('/kyc');
+        }
+      } else if (isAuthenticated && isKycApproved) {
+        // If authenticated and KYC approved, redirect to dashboard
+        if (location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/kyc' || location.pathname === '/') {
+          navigate('/dashboard');
+        }
+      }
     }
-  }, [loading, isKycApproved, location.pathname, navigate]);
+  }, [loading, isAuthenticated, isKycApproved, location.pathname, navigate]);
 
   const handleLogin = (email: string) => {
     // The token is already set in the Login component
     localStorage.setItem('studentEmail', email);
     setIsAuthenticated(true);
-    navigate('/');
+    // After login, redirect to KYC page
+    navigate('/kyc');
   };
 
   const handleSignup = (email: string) => {
     // The token is already set in the Signup component
     localStorage.setItem('studentEmail', email);
     setIsAuthenticated(true);
-    navigate('/');
+    // After signup, redirect to KYC page
+    navigate('/kyc');
   };
 
   const handleKycSuccess = () => {
-    navigate('/');
+    setIsKycApproved(true);
+    navigate('/dashboard');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('studentEmail');
+    localStorage.removeItem('student');
     setIsAuthenticated(false);
     setIsKycApproved(false);
     navigate('/login');
   };
 
-    if (loading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
         <div className="text-xl font-semibold text-gray-700">Loading...</div>
@@ -84,47 +111,52 @@ function App() {
   return (
     <ThemeProvider>
       <Routes>
-        <Route path="/login" element={<Login onLogin={handleLogin} onSwitchToSignup={() => navigate('/signup')} />} />
-        <Route path="/signup" element={<Signup onSignup={handleSignup} onSwitchToLogin={() => navigate('/login')} />} />
+        {/* Default route - redirect to login */}
+        <Route path="/" element={<Navigate to="/login" />} />
         
+        {/* Public routes - always accessible */}
+        <Route path="/login" element={
+          isAuthenticated && isKycApproved ? 
+            <Navigate to="/dashboard" /> : 
+            isAuthenticated && !isKycApproved ?
+              <Navigate to="/kyc" /> :
+              <Login onLogin={handleLogin} onSwitchToSignup={() => navigate('/signup')} />
+        } />
+        
+        <Route path="/signup" element={
+          isAuthenticated && isKycApproved ? 
+            <Navigate to="/dashboard" /> : 
+            isAuthenticated && !isKycApproved ?
+              <Navigate to="/kyc" /> :
+              <Signup onSignup={handleSignup} onSwitchToLogin={() => navigate('/login')} />
+        } />
+        
+        {/* KYC route - requires authentication */}
         <Route 
           path="/kyc" 
           element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <KYC onKycSuccess={handleKycSuccess} />
-            </ProtectedRoute>
+            !isAuthenticated ? 
+              <Navigate to="/login" /> :
+              isKycApproved ? 
+                <Navigate to="/dashboard" /> :
+                <KYC onKycSuccess={handleKycSuccess} />
           }
         />
 
+        {/* Protected routes - require authentication and KYC approval */}
         <Route 
           path="/*" 
           element={
-            <KycProtectedRoute isAuthenticated={isAuthenticated} isKycApproved={isKycApproved}>
-              <MainLayout onLogout={handleLogout} />
-            </KycProtectedRoute>
+            !isAuthenticated ? 
+              <Navigate to="/login" /> :
+              !isKycApproved ? 
+                <Navigate to="/kyc" /> :
+                <MainLayout onLogout={handleLogout} />
           }
         />
       </Routes>
     </ThemeProvider>
   );
-}
-
-// A component to protect routes
-function ProtectedRoute({ isAuthenticated, children }: { isAuthenticated: boolean, children: JSX.Element }) {
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />;
-  }
-  return children;
-}
-
-function KycProtectedRoute({ isAuthenticated, isKycApproved, children }: { isAuthenticated: boolean, isKycApproved: boolean, children: JSX.Element }) {
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />;
-  }
-  if (!isKycApproved) {
-    return <Navigate to="/kyc" />;
-  }
-  return children;
 }
 
 // The main layout for the authenticated part of the app

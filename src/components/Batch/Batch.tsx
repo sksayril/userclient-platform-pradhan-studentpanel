@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Calendar, Clock, MapPin, Users, ChevronLeft, ChevronRight, BookOpen, Video } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, Clock, MapPin, Users, ChevronLeft, ChevronRight, BookOpen, Video, Loader2, AlertCircle } from 'lucide-react';
+import { getStudentEnrollments } from '../../services/api';
 
 interface BatchSession {
   id: string;
@@ -33,8 +34,35 @@ interface BatchProps {
 export default function Batch({ studentEmail }: BatchProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data - replace with actual API calls
+  // Fetch enrollment data on component mount
+  useEffect(() => {
+    const fetchEnrollments = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+        
+        const response = await getStudentEnrollments(token);
+        setEnrollments(response.data || response.enrollments || response);
+      } catch (err: any) {
+        console.error('Failed to fetch enrollments:', err);
+        setError(err.message || 'Failed to fetch enrollment data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEnrollments();
+  }, []);
+
+  // Mock data - fallback for when API data is not available
   const batchInfo: BatchInfo = {
     batchName: "Physics Batch 12",
     courseName: "Advanced Physics",
@@ -362,6 +390,53 @@ export default function Batch({ studentEmail }: BatchProps) {
 
   const selectedDateSessions = getSessionsForDate(selectedDate);
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="px-4 py-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">My Batch</h1>
+            <p className="text-gray-600">Loading your enrollment data...</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-4" />
+            <p className="text-gray-600">Fetching your batch information...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="px-4 py-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">My Batch</h1>
+            <p className="text-gray-600">Unable to load batch data</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Data</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
@@ -373,6 +448,136 @@ export default function Batch({ studentEmail }: BatchProps) {
           </p>
         </div>
       </div>
+
+      {/* Enrollment Data Display */}
+      {enrollments.length > 0 ? (
+        <div className="bg-white mx-4 mt-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="px-4 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Your Enrollments</h2>
+                <p className="text-sm text-gray-600">Currently enrolled courses and batches</p>
+              </div>
+              <div className="text-sm text-gray-500">
+                {enrollments.length} enrollment{enrollments.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+          </div>
+          <div className="divide-y divide-gray-200">
+            {enrollments.map((enrollment, index) => (
+              <div key={enrollment.id || enrollment._id || index} className="px-4 py-4 hover:bg-gray-50 transition-colors">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900 text-lg">
+                      {enrollment.courseName || enrollment.course?.name || enrollment.course?.title || 'Course Name'}
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {enrollment.batchName || enrollment.batch?.name || enrollment.batchId || 'Batch Information'}
+                    </p>
+                  </div>
+                  <div className="ml-4">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                      enrollment.status === 'active' || enrollment.status === 'enrolled' ? 'bg-green-100 text-green-800' :
+                      enrollment.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                      enrollment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      enrollment.status === 'inactive' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {enrollment.status || 'Active'}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Enrollment Details Grid */}
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {/* Left Column */}
+                  <div className="space-y-2">
+                    {(enrollment.startDate || enrollment.enrollmentDate) && (
+                      <div className="flex items-center text-gray-600">
+                        <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                        <span className="font-medium mr-2">Start Date:</span>
+                        <span>{new Date(enrollment.startDate || enrollment.enrollmentDate).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    {enrollment.endDate && (
+                      <div className="flex items-center text-gray-600">
+                        <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                        <span className="font-medium mr-2">End Date:</span>
+                        <span>{new Date(enrollment.endDate).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    {(enrollment.instructor || enrollment.teacher) && (
+                      <div className="flex items-center text-gray-600">
+                        <Users className="w-4 h-4 mr-2 text-gray-400" />
+                        <span className="font-medium mr-2">Instructor:</span>
+                        <span>{enrollment.instructor || enrollment.teacher}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Right Column */}
+                  <div className="space-y-2">
+                    {(enrollment.location || enrollment.venue) && (
+                      <div className="flex items-center text-gray-600">
+                        <MapPin className="w-4 h-4 mr-2 text-gray-400" />
+                        <span className="font-medium mr-2">Location:</span>
+                        <span>{enrollment.location || enrollment.venue}</span>
+                      </div>
+                    )}
+                    {(enrollment.schedule || enrollment.timing) && (
+                      <div className="flex items-center text-gray-600">
+                        <Clock className="w-4 h-4 mr-2 text-gray-400" />
+                        <span className="font-medium mr-2">Schedule:</span>
+                        <span>{enrollment.schedule || enrollment.timing}</span>
+                      </div>
+                    )}
+                    {enrollment.progress !== undefined && (
+                      <div className="flex items-center text-gray-600">
+                        <BookOpen className="w-4 h-4 mr-2 text-gray-400" />
+                        <span className="font-medium mr-2">Progress:</span>
+                        <span>{enrollment.progress}%</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Progress Bar (if progress data available) */}
+                {enrollment.progress !== undefined && (
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                      <span>Course Progress</span>
+                      <span>{enrollment.progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                        style={{ width: `${enrollment.progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Additional Info */}
+                {(enrollment.description || enrollment.notes) && (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-700">{enrollment.description || enrollment.notes}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        !loading && (
+          <div className="bg-white mx-4 mt-4 rounded-lg shadow-sm border border-gray-200">
+            <div className="px-4 py-8 text-center">
+              <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Enrollments Found</h3>
+              <p className="text-gray-600">You are not currently enrolled in any courses or batches.</p>
+            </div>
+          </div>
+        )
+      )}
 
       {/* Batch Info Card */}
       <div className="bg-white px-4 py-6 border-b border-gray-200">
