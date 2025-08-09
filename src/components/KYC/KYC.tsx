@@ -76,18 +76,24 @@ export default function KYC({ onKycSuccess }: KYCProps) {
       return;
     }
 
-    if (!files.aadharDocument || !files.panDocument || !files.profilePhoto) {
-        alert('Please upload all required documents.');
+    if (!files.aadharDocument || !files.profilePhoto) {
+        alert('Please upload Aadhar document and profile photo.');
         setIsLoading(false);
         return;
     }
 
     const kycFormData = new FormData();
     kycFormData.append('aadharNumber', formData.aadharNumber);
-    kycFormData.append('panNumber', formData.panNumber);
     kycFormData.append('aadharDocument', files.aadharDocument);
-    kycFormData.append('panDocument', files.panDocument);
     kycFormData.append('profilePhoto', files.profilePhoto);
+    
+    // Only append PAN fields if they exist (optional)
+    if (formData.panNumber) {
+      kycFormData.append('panNumber', formData.panNumber);
+    }
+    if (files.panDocument) {
+      kycFormData.append('panDocument', files.panDocument);
+    }
 
     try {
       const response = await uploadKycData(kycFormData, token);
@@ -160,7 +166,7 @@ export default function KYC({ onKycSuccess }: KYCProps) {
               required
             />
           </div>
-          <div>
+          {/* <div>
             <label htmlFor="panNumber" className="block text-sm font-medium text-gray-700">PAN Number</label>
             <input
               type="text"
@@ -171,7 +177,7 @@ export default function KYC({ onKycSuccess }: KYCProps) {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               required
             />
-          </div>
+          </div> */}
           <div>
             <label htmlFor="aadharDocument" className="block text-sm font-medium text-gray-700">Aadhar Document</label>
             <input
@@ -183,7 +189,7 @@ export default function KYC({ onKycSuccess }: KYCProps) {
               required
             />
           </div>
-          <div>
+          {/* <div>
             <label htmlFor="panDocument" className="block text-sm font-medium text-gray-700">PAN Document</label>
             <input
               type="file"
@@ -193,7 +199,7 @@ export default function KYC({ onKycSuccess }: KYCProps) {
               className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               required
             />
-          </div>
+          </div> */}
           <div>
             <label htmlFor="profilePhoto" className="block text-sm font-medium text-gray-700">Profile Photo</label>
             <input

@@ -1,18 +1,59 @@
-import { DollarSign, Users, BookOpen, TrendingUp, Calendar, Award, LogOut } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { DollarSign, Users, BookOpen, TrendingUp, Calendar, Award, LogOut, User } from 'lucide-react';
+import { getStudentProfile } from '../../services/api';
 
 interface DashboardProps {
   onLogout: () => void;
 }
 
 export default function Dashboard({ onLogout }: DashboardProps) {
-  const studentData = {
-    name: 'John Doe',
-    totalFeesPaid: 15000,
-    currentBatch: 'Web Development Batch #42',
-    currentCourse: 'Full Stack JavaScript',
-    progress: 65,
-    nextClass: 'Tomorrow at 10:00 AM'
-  };
+  const [studentData, setStudentData] = useState({
+    name: '',
+    totalFeesPaid: 0,
+    currentBatch: '',
+    currentCourse: '',
+    progress: 0,
+    nextClass: 'Tomorrow at 10:00 AM', // This can be dynamic later
+    profilePhoto: ''
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+
+        const response = await getStudentProfile(token);
+        if (response && response.data) {
+          const student = response.data;
+          const latestEnrollment = student.enrollments && student.enrollments.length > 0 ? student.enrollments[0] : null;
+
+          setStudentData({
+            name: `${student.firstName} ${student.lastName}`,
+            profilePhoto: student.kycDocuments?.profilePhoto || '',
+            // Note: The following are placeholders or derived. 
+            // The API response for profile doesn't contain all dashboard stats directly.
+            totalFeesPaid: 15000, // Placeholder
+            currentBatch: latestEnrollment?.batchName || 'No Active Batch',
+            currentCourse: latestEnrollment?.courseName || 'No Active Course',
+            progress: latestEnrollment?.progress || 0,
+            nextClass: 'Tomorrow at 10:00 AM' // Placeholder
+          });
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   const stats = [
     {
@@ -45,22 +86,64 @@ export default function Dashboard({ onLogout }: DashboardProps) {
     }
   ];
 
+  if (loading) {
+    return (
+      <div className="p-4 pb-20 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 pb-20 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <p className="font-bold">Error</p>
+            <p>{error}</p>
+          </div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 pb-20 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            Welcome back, {studentData.name}!
-          </h1>
-          <p className="text-gray-600">Here's your learning progress</p>
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center relative shadow-md">
+            {studentData.profilePhoto ? (
+              <img 
+                src={`http://localhost:3100${studentData.profilePhoto}`}
+                alt="Profile"
+                className="absolute inset-0 w-full h-full object-cover object-center"
+                onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
+              />
+            ) : null}
+            <User className={`w-8 h-8 text-white ${studentData.profilePhoto ? 'hidden' : ''}`} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Welcome, {studentData.name.split(' ')[0]}!
+            </h1>
+            <p className="text-gray-600">Here's your learning progress.</p>
+          </div>
         </div>
         <button 
           onClick={onLogout}
-          className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg flex items-center transition-colors"
+          className="bg-red-500 hover:bg-red-600 text-white font-bold p-3 rounded-full flex items-center transition-colors shadow-sm"
         >
-          <LogOut className="w-5 h-5 mr-2" />
-          Logout
+          <LogOut className="w-5 h-5" />
         </button>
       </div>
 

@@ -31,6 +31,7 @@ export default function Profile({ studentEmail }: ProfileProps) {
     originalPassword: '',
     aadharNumber: '',
     panNumber: '',
+    profilePhoto: '',
     certificates: [] as any[]
   });
 
@@ -85,6 +86,7 @@ export default function Profile({ studentEmail }: ProfileProps) {
             originalPassword: student.originalPassword || '',
             aadharNumber: student.kycDocuments?.aadharCard?.number || '',
             panNumber: student.kycDocuments?.panCard?.number || '',
+            profilePhoto: student.kycDocuments?.profilePhoto || '',
             certificates: student.certificates || []
           };
           
@@ -281,8 +283,20 @@ export default function Profile({ studentEmail }: ProfileProps) {
       {/* Profile Card */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
         <div className="flex items-center mb-6">
-          <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <User className="w-10 h-10 text-white" />
+          <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center relative">
+            {profileData.profilePhoto ? (
+              <img 
+                src={`http://localhost:3100${profileData.profilePhoto}`}
+                alt="Profile"
+                className="absolute inset-0 w-full h-full object-cover object-center"
+                onError={(e) => {
+                  // Fallback to User icon if image fails to load
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            <User className={`w-10 h-10 text-white ${profileData.profilePhoto ? 'hidden' : ''}`} />
           </div>
           <div className="ml-4 flex-1">
             <h2 className="text-xl font-bold text-gray-900">{profileData.name}</h2>

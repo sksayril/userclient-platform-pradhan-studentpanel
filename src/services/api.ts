@@ -18,6 +18,7 @@ export const getKycStatus = async (token: string) => {
   }
 };
 
+
 export const uploadKycData = async (formData: FormData, token: string) => {
   try {
     const response = await fetch('http://localhost:3100/api/student/kyc-upload', {

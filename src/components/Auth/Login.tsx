@@ -112,7 +112,7 @@ export default function Login({ onLogin, onSwitchToSignup }: LoginProps) {
                 onClick={onSwitchToSignup}
                 className="text-blue-600 font-semibold hover:underline"
               >
-                Login in 
+                Sign up
               </button>
             </p>
           </div>
