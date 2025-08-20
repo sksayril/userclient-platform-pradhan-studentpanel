@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { User, Mail, Lock, Eye, EyeOff, Phone } from 'lucide-react';
-import { signupUser } from '../../services/api';
+import { User, Mail, Lock, Eye, EyeOff, Phone, ArrowLeft } from 'lucide-react';
+import { signupUser, signupSocietyMember } from '../../services/api';
 
 interface SignupProps {
-  onSignup: (email: string) => void;
+  onSignup: (email: string, userType: 'student' | 'society-member') => void;
   onSwitchToLogin: () => void;
+  onBackToUserType: () => void;
+  userType: 'student' | 'society-member';
 }
 
-const initialFormData = {
+const initialStudentFormData = {
   firstName: '',
   lastName: '',
   email: '',
@@ -24,8 +26,33 @@ const initialFormData = {
   confirmPassword: ''
 };
 
-export default function Signup({ onSignup, onSwitchToLogin }: SignupProps) {
-  const [formData, setFormData] = useState(initialFormData);
+const initialSocietyMemberFormData = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  dateOfBirth: '',
+  gender: 'male',
+  address: {
+    street: '',
+    city: '',
+    state: '',
+    pincode: ''
+  },
+  password: '',
+  confirmPassword: '',
+  agentCode: '',
+  emergencyContact: {
+    name: '',
+    relationship: '',
+    phone: ''
+  }
+};
+
+export default function Signup({ onSignup, onSwitchToLogin, onBackToUserType, userType }: SignupProps) {
+  const [formData, setFormData] = useState<any>(
+    userType === 'student' ? initialStudentFormData : initialSocietyMemberFormData
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,15 +67,34 @@ export default function Signup({ onSignup, onSwitchToLogin }: SignupProps) {
     setIsLoading(true);
     
     try {
-      const data = await signupUser(formData);
-      if (data && data.data && data.data.token && data.data.student) {
-        localStorage.setItem('token', data.data.token);
-        localStorage.setItem('student', JSON.stringify(data.data.student));
-        console.log('Signup successful, token and student data stored.');
-        onSignup(formData.email);
-        setFormData(initialFormData);
+      let data;
+      
+      if (userType === 'student') {
+        data = await signupUser(formData);
+        if (data && data.data && data.data.token && data.data.student) {
+          localStorage.setItem('token', data.data.token);
+          localStorage.setItem('student', JSON.stringify(data.data.student));
+          localStorage.setItem('userType', 'student');
+          console.log('Student signup successful, token and student data stored.');
+          onSignup(formData.email, 'student');
+          setFormData(initialStudentFormData);
+        } else {
+          throw new Error('Signup successful but no token was provided.');
+        }
       } else {
-        throw new Error('Signup successful but no token was provided.');
+        // Remove confirmPassword for society member API
+        const { confirmPassword, ...societyMemberData } = formData as any;
+        data = await signupSocietyMember(societyMemberData);
+        if (data && data.data && data.data.token && data.data.member) {
+          localStorage.setItem('token', data.data.token);
+          localStorage.setItem('societyMember', JSON.stringify(data.data.member));
+          localStorage.setItem('userType', 'society-member');
+          console.log('Society member signup successful, token and member data stored.');
+          onSignup(formData.email, 'society-member');
+          setFormData(initialSocietyMemberFormData);
+        } else {
+          throw new Error('Signup successful but no token was provided.');
+        }
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -69,15 +115,23 @@ export default function Signup({ onSignup, onSwitchToLogin }: SignupProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
+    <div className={`min-h-screen bg-gradient-to-br ${userType === 'student' ? 'from-green-50 to-emerald-100' : 'from-purple-50 to-indigo-100'} flex items-center justify-center p-4`}>
       <div className="w-full max-w-sm">
         <div className="bg-white rounded-2xl shadow-xl p-6 space-y-6">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="text-center relative">
+            <button
+              onClick={onBackToUserType}
+              className="absolute left-0 top-0 p-2 text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className={`w-16 h-16 ${userType === 'student' ? 'bg-green-600' : 'bg-purple-600'} rounded-full flex items-center justify-center mx-auto mb-4`}>
               <User className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-            <p className="text-gray-600">Join us to start learning</p>
+            <p className="text-gray-600">
+              {userType === 'student' ? 'Join us to start learning' : 'Join our society community'}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -263,7 +317,7 @@ export default function Signup({ onSignup, onSwitchToLogin }: SignupProps) {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                  className={`w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 ${userType === 'student' ? 'focus:ring-green-500' : 'focus:ring-purple-500'} focus:border-transparent outline-none transition-all`}
                   placeholder="Confirm your password"
                   required
                 />
@@ -277,10 +331,88 @@ export default function Signup({ onSignup, onSwitchToLogin }: SignupProps) {
               </div>
             </div>
 
+            {/* Society Member Specific Fields */}
+            {userType === 'society-member' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Agent Code (Optional)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      name="agentCode"
+                      value={(formData as any).agentCode || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+                      placeholder="Enter agent code if you have one"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Emergency Contact
+                  </label>
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Emergency Contact Name"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+                        value={(formData as any).emergencyContact?.name || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          emergencyContact: {
+                            ...(formData as any).emergencyContact,
+                            name: e.target.value
+                          }
+                        })}
+                        required
+                      />
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Relationship"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+                        value={(formData as any).emergencyContact?.relationship || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          emergencyContact: {
+                            ...(formData as any).emergencyContact,
+                            relationship: e.target.value
+                          }
+                        })}
+                        required
+                      />
+                    </div>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="tel"
+                        placeholder="Emergency Contact Phone"
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+                        value={(formData as any).emergencyContact?.phone || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          emergencyContact: {
+                            ...(formData as any).emergencyContact,
+                            phone: e.target.value
+                          }
+                        })}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`w-full ${userType === 'student' ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500' : 'bg-purple-600 hover:bg-purple-700 focus:ring-purple-500'} text-white py-3 rounded-xl font-semibold focus:ring-2 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </button>
@@ -291,7 +423,7 @@ export default function Signup({ onSignup, onSwitchToLogin }: SignupProps) {
               Already have an account?{' '}
               <button
                 onClick={onSwitchToLogin}
-                className="text-green-600 font-semibold hover:underline"
+                className={`${userType === 'student' ? 'text-green-600' : 'text-purple-600'} font-semibold hover:underline`}
               >
                 Sign in
               </button>

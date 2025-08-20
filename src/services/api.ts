@@ -232,3 +232,108 @@ export const getStudentEnrollments = async (token: string) => {
     throw error;
   }
 };
+
+// Society Member API Functions
+export const loginSocietyMember = async (credentials: { email: string; password: string }) => {
+  try {
+    const response = await fetch('http://localhost:3100/api/society-member/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Something went wrong during login.');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Society Member Login API error:', error);
+    throw error;
+  }
+};
+
+export const signupSocietyMember = async (formData: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  gender: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    pincode: string;
+  };
+  password: string;
+  agentCode?: string;
+  emergencyContact: {
+    name: string;
+    relationship: string;
+    phone: string;
+  };
+}) => {
+  try {
+    const response = await fetch('http://localhost:3100/api/society-member/signup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Something went wrong during signup.');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Society Member Signup API error:', error);
+    throw error;
+  }
+};
+
+export const getSocietyMemberKycStatus = async (token: string) => {
+  try {
+    const response = await fetch('http://localhost:3100/api/society-member/kyc-status', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch KYC status.');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Get Society Member KYC Status API error:', error);
+    throw error;
+  }
+};
+
+export const uploadSocietyMemberKycData = async (formData: FormData, token: string) => {
+  try {
+    const response = await fetch('http://localhost:3100/api/society-member/kyc-upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Something went wrong during KYC upload.');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Society Member KYC Upload API error:', error);
+    throw error;
+  }
+};

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { uploadKycData, getKycStatus } from '../../services/api';
+import { uploadKycData, getKycStatus, uploadSocietyMemberKycData, getSocietyMemberKycStatus } from '../../services/api';
 
 interface KycStatusData {
   kycStatus: string;
@@ -9,9 +9,11 @@ interface KycStatusData {
 
 interface KYCProps {
   onKycSuccess: () => void;
+  userType?: 'student' | 'society-member';
 }
 
-export default function KYC({ onKycSuccess }: KYCProps) {
+export default function KYC({ onKycSuccess, userType }: KYCProps) {
+  const currentUserType = userType || localStorage.getItem('userType') as 'student' | 'society-member' || 'student';
   const [formData, setFormData] = useState({
     aadharNumber: '',
     panNumber: '',
@@ -40,7 +42,13 @@ export default function KYC({ onKycSuccess }: KYCProps) {
         return;
       }
       try {
-        const response = await getKycStatus(token);
+        let response;
+        if (currentUserType === 'student') {
+          response = await getKycStatus(token);
+        } else {
+          response = await getSocietyMemberKycStatus(token);
+        }
+        
         if (response && response.data && response.data.isKycApproved) {
           onKycSuccess();
         }
@@ -51,7 +59,7 @@ export default function KYC({ onKycSuccess }: KYCProps) {
     };
 
     checkKycStatusOnLoad();
-  }, [onKycSuccess]);
+  }, [onKycSuccess, currentUserType]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -76,10 +84,21 @@ export default function KYC({ onKycSuccess }: KYCProps) {
       return;
     }
 
-    if (!files.aadharDocument || !files.profilePhoto) {
+    // Different validation for Society Members vs Students
+    if (currentUserType === 'society-member') {
+      // Society Members need all fields
+      if (!formData.aadharNumber || !formData.panNumber || !files.aadharDocument || !files.panDocument || !files.profilePhoto) {
+        alert('Please fill in all required fields: Aadhar Number, PAN Number, Aadhar Document, PAN Document, and Profile Photo.');
+        setIsLoading(false);
+        return;
+      }
+    } else {
+      // Students need Aadhar Document and Profile Photo
+      if (!files.aadharDocument || !files.profilePhoto) {
         alert('Please upload Aadhar document and profile photo.');
         setIsLoading(false);
         return;
+      }
     }
 
     const kycFormData = new FormData();
@@ -87,16 +106,27 @@ export default function KYC({ onKycSuccess }: KYCProps) {
     kycFormData.append('aadharDocument', files.aadharDocument);
     kycFormData.append('profilePhoto', files.profilePhoto);
     
-    // Only append PAN fields if they exist (optional)
-    if (formData.panNumber) {
+    // For Society Members, PAN fields are required
+    if (currentUserType === 'society-member') {
       kycFormData.append('panNumber', formData.panNumber);
-    }
-    if (files.panDocument) {
-      kycFormData.append('panDocument', files.panDocument);
+      kycFormData.append('panDocument', files.panDocument!);
+    } else {
+      // For Students, PAN fields are optional
+      if (formData.panNumber) {
+        kycFormData.append('panNumber', formData.panNumber);
+      }
+      if (files.panDocument) {
+        kycFormData.append('panDocument', files.panDocument);
+      }
     }
 
     try {
-      const response = await uploadKycData(kycFormData, token);
+      let response;
+      if (currentUserType === 'student') {
+        response = await uploadKycData(kycFormData, token);
+      } else {
+        response = await uploadSocietyMemberKycData(kycFormData, token);
+      }
       console.log('KYC upload successful:', response);
       alert('KYC details submitted successfully! Your application is under review.');
       onKycSuccess();
@@ -120,7 +150,13 @@ export default function KYC({ onKycSuccess }: KYCProps) {
       return;
     }
     try {
-      const response = await getKycStatus(token);
+      let response;
+      if (currentUserType === 'student') {
+        response = await getKycStatus(token);
+      } else {
+        response = await getSocietyMemberKycStatus(token);
+      }
+      
       if (response && response.data) {
         setKycStatus(response.data);
         setIsModalOpen(true);
@@ -143,7 +179,9 @@ export default function KYC({ onKycSuccess }: KYCProps) {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">KYC Verification</h1>
+            <h1 className="text-2xl font-bold">
+              {currentUserType === 'society-member' ? 'Society Member KYC' : 'Student KYC'} Verification
+            </h1>
             <button 
               onClick={handleStatusCheck}
               disabled={isStatusLoading}
@@ -152,10 +190,16 @@ export default function KYC({ onKycSuccess }: KYCProps) {
               {isStatusLoading ? 'Checking...' : 'KYC Status'}
             </button>
           </div>
-        <p className="text-gray-600 mb-6 text-center">Please complete your KYC to access all features.</p>
+        <p className="text-gray-600 mb-6 text-center">
+          {currentUserType === 'society-member' 
+            ? 'Please complete your KYC with all required documents to access society member features.' 
+            : 'Please complete your KYC to access all features.'}
+        </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="aadharNumber" className="block text-sm font-medium text-gray-700">Aadhar Number</label>
+            <label htmlFor="aadharNumber" className="block text-sm font-medium text-gray-700">
+              Aadhar Number {currentUserType === 'society-member' && <span className="text-red-500">*</span>}
+            </label>
             <input
               type="text"
               name="aadharNumber"
@@ -163,23 +207,33 @@ export default function KYC({ onKycSuccess }: KYCProps) {
               value={formData.aadharNumber}
               onChange={handleChange}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              required
+              required={currentUserType === 'society-member'}
+              placeholder="Enter your Aadhar number"
             />
           </div>
-          {/* <div>
-            <label htmlFor="panNumber" className="block text-sm font-medium text-gray-700">PAN Number</label>
-            <input
-              type="text"
-              name="panNumber"
-              id="panNumber"
-              value={formData.panNumber}
-              onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div> */}
+          
+          {currentUserType === 'society-member' && (
+            <div>
+              <label htmlFor="panNumber" className="block text-sm font-medium text-gray-700">
+                PAN Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="panNumber"
+                id="panNumber"
+                value={formData.panNumber}
+                onChange={handleChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                required
+                placeholder="Enter your PAN number"
+              />
+            </div>
+          )}
+          
           <div>
-            <label htmlFor="aadharDocument" className="block text-sm font-medium text-gray-700">Aadhar Document</label>
+            <label htmlFor="aadharDocument" className="block text-sm font-medium text-gray-700">
+              Aadhar Document <span className="text-red-500">*</span>
+            </label>
             <input
               type="file"
               name="aadharDocument"
@@ -187,21 +241,33 @@ export default function KYC({ onKycSuccess }: KYCProps) {
               onChange={handleFileChange}
               className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               required
+              accept="image/*,.pdf"
             />
+            <p className="mt-1 text-xs text-gray-500">Upload a clear image or PDF of your Aadhar card</p>
           </div>
-          {/* <div>
-            <label htmlFor="panDocument" className="block text-sm font-medium text-gray-700">PAN Document</label>
-            <input
-              type="file"
-              name="panDocument"
-              id="panDocument"
-              onChange={handleFileChange}
-              className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              required
-            />
-          </div> */}
+          
+          {currentUserType === 'society-member' && (
+            <div>
+              <label htmlFor="panDocument" className="block text-sm font-medium text-gray-700">
+                PAN Document <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="file"
+                name="panDocument"
+                id="panDocument"
+                onChange={handleFileChange}
+                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                required
+                accept="image/*,.pdf"
+              />
+              <p className="mt-1 text-xs text-gray-500">Upload a clear image or PDF of your PAN card</p>
+            </div>
+          )}
+          
           <div>
-            <label htmlFor="profilePhoto" className="block text-sm font-medium text-gray-700">Profile Photo</label>
+            <label htmlFor="profilePhoto" className="block text-sm font-medium text-gray-700">
+              Profile Photo <span className="text-red-500">*</span>
+            </label>
             <input
               type="file"
               name="profilePhoto"
@@ -209,10 +275,17 @@ export default function KYC({ onKycSuccess }: KYCProps) {
               onChange={handleFileChange}
               className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               required
+              accept="image/*"
             />
+            <p className="mt-1 text-xs text-gray-500">Upload a recent passport-size photo</p>
           </div>
-          <button type="submit" disabled={isLoading} className="w-full bg-blue-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed">
-            Submit for Verification
+          
+          <button 
+            type="submit" 
+            disabled={isLoading} 
+            className={`w-full ${currentUserType === 'society-member' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white py-2 px-4 rounded-md font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed`}
+          >
+            {isLoading ? 'Submitting...' : 'Submit for Verification'}
           </button>
         </form>
       </div>

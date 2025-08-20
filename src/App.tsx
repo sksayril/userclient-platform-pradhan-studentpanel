@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import Login from './components/Auth/Login';
 import Signup from './components/Auth/Signup';
+import UserTypeSelection from './components/Auth/UserTypeSelection';
 import Dashboard from './components/Dashboard/Dashboard';
+import SocietyMemberDashboard from './components/Dashboard/SocietyMemberDashboard';
 import Courses from './components/Courses/Courses';
 import Fees from './components/Fees/Fees';
 import Batch from './components/Batch/Batch';
@@ -10,7 +12,8 @@ import Profile from './components/Profile/Profile';
 import BottomNavigation from './components/Navigation/BottomNavigation';
 import { ThemeProvider } from './context/ThemeContext';
 import KYC from './components/KYC/KYC';
-import { getKycStatus } from './services/api';
+import KYCWaiting from './components/KYC/KYCWaiting';
+import { getKycStatus, getSocietyMemberKycStatus } from './services/api';
 
 type AppTab = 'dashboard' | 'courses' | 'profile' | 'fees' | 'batch';
 
@@ -18,21 +21,41 @@ function App() {
   // Check authentication status - start with false to always show login first
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isKycApproved, setIsKycApproved] = useState(false);
+  const [isKycSubmitted, setIsKycSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userType, setUserType] = useState<'student' | 'society-member' | null>(null);
+  const [selectedUserType, setSelectedUserType] = useState<'student' | 'society-member' | null>(null);
 
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     const checkStatus = async () => {
       const token = localStorage.getItem('token');
-      if (token) {
+      const storedUserType = localStorage.getItem('userType') as 'student' | 'society-member' | null;
+      
+      if (token && storedUserType) {
         // If token exists, set authenticated and check KYC status
         setIsAuthenticated(true);
+        setUserType(storedUserType);
         try {
-          const response = await getKycStatus(token);
-          if (response?.data?.isKycApproved) {
-            setIsKycApproved(true);
+          let response;
+          if (storedUserType === 'student') {
+            response = await getKycStatus(token);
+          } else {
+            response = await getSocietyMemberKycStatus(token);
+          }
+          
+          if (response?.data) {
+            if (response.data.isKycApproved) {
+              setIsKycApproved(true);
+              setIsKycSubmitted(false);
+            } else if (response.data.kycStatus === 'submitted' || response.data.kycStatus === 'pending') {
+              setIsKycSubmitted(true);
+              setIsKycApproved(false);
+            } else {
+              setIsKycSubmitted(false);
+              setIsKycApproved(false);
+            }
           }
         } catch (error) {
           console.error("Failed to fetch KYC status", error);
@@ -40,7 +63,12 @@ function App() {
           localStorage.removeItem('token');
           localStorage.removeItem('studentEmail');
           localStorage.removeItem('student');
+          localStorage.removeItem('societyMember');
+          localStorage.removeItem('userType');
           setIsAuthenticated(false);
+          setUserType(null);
+          setIsKycSubmitted(false);
+          setIsKycApproved(false);
         }
       }
       setLoading(false);
@@ -48,46 +76,53 @@ function App() {
     checkStatus();
   }, []); // Remove dependency on isAuthenticated to prevent loops
 
-  // Redirect logic based on authentication and KYC status
-  useEffect(() => {
-    if (!loading) {
-      if (!isAuthenticated) {
-        // If not authenticated, always redirect to login (except signup page)
-        if (location.pathname !== '/login' && location.pathname !== '/signup') {
-          navigate('/login');
-        }
-      } else if (isAuthenticated && !isKycApproved) {
-        // If authenticated but KYC not approved, redirect to KYC
-        if (location.pathname !== '/kyc') {
-          navigate('/kyc');
-        }
-      } else if (isAuthenticated && isKycApproved) {
-        // If authenticated and KYC approved, redirect to dashboard
-        if (location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/kyc' || location.pathname === '/') {
-          navigate('/dashboard');
-        }
-      }
-    }
-  }, [loading, isAuthenticated, isKycApproved, location.pathname, navigate]);
 
-  const handleLogin = (email: string) => {
+
+  const handleUserTypeSelection = (type: 'student' | 'society-member') => {
+    setSelectedUserType(type);
+    navigate('/login');
+  };
+
+  const handleBackToUserType = () => {
+    setSelectedUserType(null);
+    navigate('/');
+  };
+
+  const handleLogin = (email: string, type: 'student' | 'society-member') => {
     // The token is already set in the Login component
-    localStorage.setItem('studentEmail', email);
+    if (type === 'student') {
+      localStorage.setItem('studentEmail', email);
+    } else {
+      localStorage.setItem('societyMemberEmail', email);
+    }
     setIsAuthenticated(true);
+    setUserType(type);
     // After login, redirect to KYC page
     navigate('/kyc');
   };
 
-  const handleSignup = (email: string) => {
+  const handleSignup = (email: string, type: 'student' | 'society-member') => {
     // The token is already set in the Signup component
-    localStorage.setItem('studentEmail', email);
+    if (type === 'student') {
+      localStorage.setItem('studentEmail', email);
+    } else {
+      localStorage.setItem('societyMemberEmail', email);
+    }
     setIsAuthenticated(true);
+    setUserType(type);
     // After signup, redirect to KYC page
     navigate('/kyc');
   };
 
   const handleKycSuccess = () => {
+    setIsKycSubmitted(true);
+    setIsKycApproved(false);
+    navigate('/kyc-waiting');
+  };
+
+  const handleKycApproved = () => {
     setIsKycApproved(true);
+    setIsKycSubmitted(false);
     navigate('/dashboard');
   };
 
@@ -95,9 +130,15 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('studentEmail');
     localStorage.removeItem('student');
+    localStorage.removeItem('societyMemberEmail');
+    localStorage.removeItem('societyMember');
+    localStorage.removeItem('userType');
     setIsAuthenticated(false);
     setIsKycApproved(false);
-    navigate('/login');
+    setIsKycSubmitted(false);
+    setUserType(null);
+    setSelectedUserType(null);
+    navigate('/');
   };
 
   if (loading) {
@@ -111,24 +152,50 @@ function App() {
   return (
     <ThemeProvider>
       <Routes>
-        {/* Default route - redirect to login */}
-        <Route path="/" element={<Navigate to="/login" />} />
+        {/* Default route - show user type selection */}
+        <Route path="/" element={
+          isAuthenticated && isKycApproved ? 
+            <Navigate to="/dashboard" /> : 
+            isAuthenticated && isKycSubmitted ?
+              <Navigate to="/kyc-waiting" /> :
+            isAuthenticated && !isKycApproved ?
+              <Navigate to="/kyc" /> :
+              <UserTypeSelection onSelectUserType={handleUserTypeSelection} />
+        } />
         
         {/* Public routes - always accessible */}
         <Route path="/login" element={
           isAuthenticated && isKycApproved ? 
             <Navigate to="/dashboard" /> : 
+            isAuthenticated && isKycSubmitted ?
+              <Navigate to="/kyc-waiting" /> :
             isAuthenticated && !isKycApproved ?
               <Navigate to="/kyc" /> :
-              <Login onLogin={handleLogin} onSwitchToSignup={() => navigate('/signup')} />
+              selectedUserType ? 
+                <Login 
+                  onLogin={handleLogin} 
+                  onSwitchToSignup={() => navigate('/signup')} 
+                  onBackToUserType={handleBackToUserType}
+                  userType={selectedUserType}
+                /> :
+                <Navigate to="/" />
         } />
         
         <Route path="/signup" element={
           isAuthenticated && isKycApproved ? 
             <Navigate to="/dashboard" /> : 
+            isAuthenticated && isKycSubmitted ?
+              <Navigate to="/kyc-waiting" /> :
             isAuthenticated && !isKycApproved ?
               <Navigate to="/kyc" /> :
-              <Signup onSignup={handleSignup} onSwitchToLogin={() => navigate('/login')} />
+              selectedUserType ? 
+                <Signup 
+                  onSignup={handleSignup} 
+                  onSwitchToLogin={() => navigate('/login')} 
+                  onBackToUserType={handleBackToUserType}
+                  userType={selectedUserType}
+                /> :
+                <Navigate to="/" />
         } />
         
         {/* KYC route - requires authentication */}
@@ -136,10 +203,26 @@ function App() {
           path="/kyc" 
           element={
             !isAuthenticated ? 
-              <Navigate to="/login" /> :
+              <Navigate to="/" /> :
               isKycApproved ? 
                 <Navigate to="/dashboard" /> :
-                <KYC onKycSuccess={handleKycSuccess} />
+              isKycSubmitted ? 
+                <Navigate to="/kyc-waiting" /> :
+                <KYC onKycSuccess={handleKycSuccess} userType={userType || undefined} />
+          }
+        />
+
+        {/* KYC Waiting route - requires authentication and KYC submission */}
+        <Route 
+          path="/kyc-waiting" 
+          element={
+            !isAuthenticated ? 
+              <Navigate to="/" /> :
+              isKycApproved ? 
+                <Navigate to="/dashboard" /> :
+              !isKycSubmitted ? 
+                <Navigate to="/kyc" /> :
+                <KYCWaiting onKycApproved={handleKycApproved} userType={userType || undefined} />
           }
         />
 
@@ -148,9 +231,9 @@ function App() {
           path="/*" 
           element={
             !isAuthenticated ? 
-              <Navigate to="/login" /> :
+              <Navigate to="/" /> :
               !isKycApproved ? 
-                <Navigate to="/kyc" /> :
+                (isKycSubmitted ? <Navigate to="/kyc-waiting" /> : <Navigate to="/kyc" />) :
                 <MainLayout onLogout={handleLogout} />
           }
         />
@@ -163,8 +246,15 @@ function App() {
 function MainLayout({ onLogout }: { onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState<AppTab>('dashboard');
   const studentEmail = localStorage.getItem('studentEmail') || '';
+  const userType = localStorage.getItem('userType') as 'student' | 'society-member' | null;
 
   const renderContent = () => {
+    if (userType === 'society-member') {
+      // For society members, show a simplified layout without bottom navigation
+      return <SocietyMemberDashboard onLogout={onLogout} />;
+    }
+
+    // For students, show the original layout with bottom navigation
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard onLogout={onLogout} />;
@@ -184,10 +274,12 @@ function MainLayout({ onLogout }: { onLogout: () => void }) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 relative">
       {renderContent()}
-      <BottomNavigation 
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
+      {userType === 'student' && (
+        <BottomNavigation 
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+      )}
     </div>
   );
 }
