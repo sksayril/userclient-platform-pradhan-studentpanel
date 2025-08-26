@@ -124,7 +124,7 @@ export default function Dashboard({ onLogout }: DashboardProps) {
           <div className="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center relative shadow-md">
             {studentData.profilePhoto ? (
               <img 
-                src={`http://localhost:3100${studentData.profilePhoto}`}
+                src={`https://psmw75hs-3100.inc1.devtunnels.ms${studentData.profilePhoto}`}
                 alt="Profile"
                 className="absolute inset-0 w-full h-full object-cover object-center"
                 onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}

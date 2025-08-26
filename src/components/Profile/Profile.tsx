@@ -286,7 +286,7 @@ export default function Profile({ studentEmail }: ProfileProps) {
           <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center relative">
             {profileData.profilePhoto ? (
               <img 
-                src={`http://localhost:3100${profileData.profilePhoto}`}
+                src={`https://psmw75hs-3100.inc1.devtunnels.ms${profileData.profilePhoto}`}
                 alt="Profile"
                 className="absolute inset-0 w-full h-full object-cover object-center"
                 onError={(e) => {
@@ -655,14 +655,14 @@ export default function Profile({ studentEmail }: ProfileProps) {
                   {/* Street */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Street Address
+                      Correspondense Address
                     </label>
                     <input
                       type="text"
                       value={editFormData.address.street}
                       onChange={(e) => handleEditFormChange('address.street', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                      placeholder="Enter street address"
+                      placeholder="Enter Correspondense Address"
                       required
                     />
                   </div>

@@ -352,13 +352,13 @@ export default function Signup({ onSignup, onSwitchToLogin, onBackToUserType, us
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Emergency Contact
+                    Surety Contact
                   </label>
                   <div className="space-y-3">
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder="Emergency Contact Name"
+                        placeholder="Surety Contact Name"
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
                         value={(formData as any).emergencyContact?.name || ''}
                         onChange={(e) => setFormData({
@@ -391,7 +391,7 @@ export default function Signup({ onSignup, onSwitchToLogin, onBackToUserType, us
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
                         type="tel"
-                        placeholder="Emergency Contact Phone"
+                        placeholder="Surety Contact Phone"
                         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
                         value={(formData as any).emergencyContact?.phone || ''}
                         onChange={(e) => setFormData({

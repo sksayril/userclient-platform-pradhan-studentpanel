@@ -104,13 +104,6 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
 
   const stats = [
     {
-      title: 'Membership Start',
-      value: membershipData ? (membershipData.membershipStartDate ? new Date(membershipData.membershipStartDate).toLocaleDateString() : 'N/A') : 'N/A',
-      icon: Calendar,
-      color: 'bg-green-500',
-      textColor: 'text-green-600'
-    },
-    {
       title: 'Account Status',
       value: profileData ? (profileData.status || 'Active') : (memberData.isAccountActive ? 'Active' : 'Inactive'),
       icon: UserCheck,
@@ -135,13 +128,6 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
 
   const quickActions = [
     {
-      title: 'View Profile',
-      description: 'Update your personal information',
-      icon: Users,
-      action: () => console.log('View Profile clicked'),
-      color: 'bg-blue-500 hover:bg-blue-600'
-    },
-    {
       title: 'Payment Request',
       description: 'Submit new payment requests',
       icon: CreditCard,
@@ -154,50 +140,36 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       icon: CreditCard,
       action: () => handlePendingPaymentsClick(),
       color: 'bg-green-500 hover:bg-green-600'
-    },
-    {
-      title: 'Benefits',
-      description: 'Explore member benefits and offers',
-      icon: Award,
-      action: () => console.log('Benefits clicked'),
-      color: 'bg-purple-500 hover:bg-purple-600'
-    },
-    {
-      title: 'Community',
-      description: 'Connect with other members',
-      icon: TrendingUp,
-      action: () => console.log('Community clicked'),
-      color: 'bg-orange-500 hover:bg-orange-600'
     }
   ];
 
   // Mock payment request data - fallback when API fails
-  const mockPaymentRequests = [
-    {
-      id: '1',
-      title: 'Monthly Membership Fee',
-      amount: 5000,
-      status: 'pending',
-      date: '2024-06-15',
-      description: 'June 2024 membership fee payment'
-    },
-    {
-      id: '2',
-      title: 'Event Registration',
-      amount: 2500,
-      status: 'approved',
-      date: '2024-06-10',
-      description: 'Annual conference registration fee'
-    },
-    {
-      id: '3',
-      title: 'Special Contribution',
-      amount: 10000,
-      status: 'rejected',
-      date: '2024-06-05',
-      description: 'Community development fund contribution'
-    }
-  ];
+  // const mockPaymentRequests = [
+  //   {
+  //     id: '1',
+  //     title: 'Monthly Membership Fee',
+  //     amount: 5000,
+  //     status: 'pending',
+  //     date: '2024-06-15',
+  //     description: 'June 2024 membership fee payment'
+  //   },
+  //   {
+  //     id: '2',
+  //     title: 'Event Registration',
+  //     amount: 2500,
+  //     status: 'approved',
+  //     date: '2024-06-10',
+  //     description: 'Annual conference registration fee'
+  //   },
+  //   {
+  //     id: '3',
+  //     title: 'Special Contribution',
+  //     amount: 10000,
+  //     status: 'rejected',
+  //     date: '2024-06-05',
+  //     description: 'Community development fund contribution'
+  //   }
+  // ];
 
   // Function to handle payment request click
   const handlePaymentRequestClick = () => {
@@ -223,7 +195,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch('http://localhost:3100/api/payment-requests/member/requests', {
+      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/payment-requests/member/requests', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -274,7 +246,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         throw new Error('No authentication token found');
       }
       
-      const response = await fetch('http://localhost:3100/api/payment-requests/create-razorpay-order', {
+      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/payment-requests/create-razorpay-order', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -371,14 +343,14 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       const testSignature = 'razorpay_signature_here';
       
       console.log('Verifying Razorpay payment for requestId:', requestId);
-      console.log('Request URL:', 'http://localhost:3100/verify-razorpay-payment');
+      console.log('Request URL:', 'https://psmw75hs-3100.inc1.devtunnels.ms/verify-razorpay-payment');
       console.log('Request body:', { 
         requestId: requestId, 
         paymentId: testPaymentId, 
         signature: testSignature 
       });
       
-      const response = await fetch('http://localhost:3100/api/payment-requests/verify-razorpay-payment', {
+      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/payment-requests/verify-razorpay-payment', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -473,13 +445,13 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Processing UPI payment for requestId:', requestId);
-      console.log('Request URL:', 'http://localhost:3100/api/payment-requests/process-upi-payment');
+      console.log('Request URL:', 'https://psmw75hs-3100.inc1.devtunnels.ms/api/payment-requests/process-upi-payment');
       console.log('Request body:', { 
         requestId: requestId,
         paymentMethod: 'UPI'
       });
       
-      const response = await fetch('http://localhost:3100/api/payment-requests/process-upi-payment', {
+      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/payment-requests/process-upi-payment', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -566,9 +538,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching society member profile...');
-      console.log('Request URL:', 'http://localhost:3100/api/society-member/profile');
+      console.log('Request URL:', 'https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/profile');
       
-      const response = await fetch('http://localhost:3100/api/society-member/profile', {
+      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/profile', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -651,7 +623,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       
-      const response = await fetch('http://localhost:3100/api/society-member/profile', {
+      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/profile', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -734,9 +706,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Changing password...');
-      console.log('Request URL:', 'http://localhost:3100/api/society-member/change-password');
+      console.log('Request URL:', 'https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/change-password');
       
-      const response = await fetch('http://localhost:3100/api/society-member/change-password', {
+      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/change-password', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -819,9 +791,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching membership data...');
-      console.log('Request URL:', 'http://localhost:3100/api/society-member/membership');
+      console.log('Request URL:', 'https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/membership');
       
-      const response = await fetch('http://localhost:3100/api/society-member/membership', {
+      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/membership', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -901,9 +873,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching referrals data...');
-      console.log('Request URL:', 'http://localhost:3100/api/society-member/referrals');
+      console.log('Request URL:', 'https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/referrals');
       
-      const response = await fetch('http://localhost:3100/api/society-member/referrals', {
+      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/referrals', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -983,9 +955,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching agent codes data...');
-      console.log('Request URL:', 'http://localhost:3100/api/society-member/agent-codes');
+      console.log('Request URL:', 'https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/agent-codes');
       
-      const response = await fetch('http://localhost:3100/api/society-member/agent-codes', {
+      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/agent-codes', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1065,7 +1037,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching pending payments from API...');
-      const response = await fetch('http://localhost:3100/api/payment-requests/member/pending', {
+      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/payment-requests/member/pending', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1194,7 +1166,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Member ID</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Account Number</p>
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
                   {profileData ? (profileData.memberAccountNumber || profileData.memberId || profileData.id || 'N/A') : (memberData.memberAccountNumber || 'N/A')}
                 </p>
@@ -1421,7 +1393,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                 </h3>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Member ID</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Account Number</p>
                     <p className="text-sm font-medium text-gray-900 dark:text-white font-mono">
                       {profileData.memberAccountNumber || profileData.memberId || profileData.id || 'N/A'}
                     </p>
@@ -1471,7 +1443,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                 <div className="space-y-3">
                   {profileData.address && (
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Street Address</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Correspondense Address</p>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">
                         {profileData.address.street || 'N/A'}
                       </p>
@@ -1554,7 +1526,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Document Preview</p>
                       <div className="relative group">
                         <img
-                          src={`http://localhost:3100/${profileData.kycDocuments.aadharCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
+                          src={`https://psmw75hs-3100.inc1.devtunnels.ms/${profileData.kycDocuments.aadharCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
                           alt="Aadhar Card"
                           className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
                           onError={(e) => {
@@ -1590,7 +1562,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Document Preview</p>
                       <div className="relative group">
                         <img
-                          src={`http://localhost:3100/${profileData.kycDocuments.panCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
+                          src={`https://psmw75hs-3100.inc1.devtunnels.ms/${profileData.kycDocuments.panCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
                           alt="PAN Card"
                           className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
                           onError={(e) => {
@@ -1620,7 +1592,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Photo Preview</p>
                       <div className="relative group">
                         <img
-                          src={`http://localhost:3100/${profileData.kycDocuments.profilePhoto.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
+                          src={`https://psmw75hs-3100.inc1.devtunnels.ms/${profileData.kycDocuments.profilePhoto.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
                           alt="Profile Photo"
                           className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
                           onError={(e) => {
@@ -1672,11 +1644,11 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
           </div>
         )}
 
-        {/* Emergency Contact Section */}
+        {/* Surety Contact Section */}
         {profileData && profileData.emergencyContact && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-              Emergency Contact
+              Surety Contact
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-3">
@@ -1741,7 +1713,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
             </button>
           </div>
           
-          <div className="space-y-4">
+          {/* <div className="space-y-4">
             {mockPaymentRequests.map((request) => (
               <div key={request.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <div className="flex items-center justify-between mb-3">
@@ -1807,7 +1779,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
               <p>No payment requests found</p>
               <p className="text-sm">Create your first payment request to get started</p>
             </div>
-          )}
+          )} */}
         </div>
 
         {/* Recent Activity */}
@@ -3376,14 +3348,14 @@ const UpdateProfileForm: React.FC<UpdateProfileFormProps> = ({ profileData, onSu
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Street Address
+              Correspondense Address
             </label>
             <input
               type="text"
               value={formData.address.street}
               onChange={(e) => handleInputChange('address', e.target.value, 'address', 'street')}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
-              placeholder="Enter street address"
+              placeholder="Enter Correspondense Address"
             />
           </div>
           <div>
@@ -3425,10 +3397,10 @@ const UpdateProfileForm: React.FC<UpdateProfileFormProps> = ({ profileData, onSu
         </div>
       </div>
 
-      {/* Emergency Contact */}
+      {/* Surety Contact */}
       <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Emergency Contact
+          Surety Contact
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
