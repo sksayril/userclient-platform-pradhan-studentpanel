@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Award, Calendar, TrendingUp, UserCheck, FileText, CreditCard , Plus, Clock, X, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Users, Award, Calendar, TrendingUp, UserCheck, FileText, CreditCard , Plus, Clock, X, Loader2, AlertCircle, RefreshCw, Gem, GraduationCap, AlertTriangle, User, CheckCircle, XCircle } from 'lucide-react';
+import LoanApplication from './LoanApplication';
 
 interface SocietyMemberDashboardProps {
   onLogout: () => void;
@@ -95,6 +96,37 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
   const [agentCodesLoading, setAgentCodesLoading] = useState(false);
   const [agentCodesError, setAgentCodesError] = useState<string | null>(null);
   const [isAgentCodesModalOpen, setIsAgentCodesModalOpen] = useState(false);
+  
+  // State for loan application modal
+  const [isLoanApplicationModalOpen, setIsLoanApplicationModalOpen] = useState(false);
+  
+  // State for loans data
+  const [loansData, setLoansData] = useState<any>(null);
+  const [loansLoading, setLoansLoading] = useState(false);
+  const [loansError, setLoansError] = useState<string | null>(null);
+  const [isLoansModalOpen, setIsLoansModalOpen] = useState(false);
+
+  // State for individual loan details
+  const [selectedLoan, setSelectedLoan] = useState<any>(null);
+  const [loanDetails, setLoanDetails] = useState<any>(null);
+  const [loanDetailsLoading, setLoanDetailsLoading] = useState(false);
+  const [loanDetailsError, setLoanDetailsError] = useState<string | null>(null);
+  const [isLoanDetailsModalOpen, setIsLoanDetailsModalOpen] = useState(false);
+
+  // Debug loans modal state changes
+  useEffect(() => {
+    console.log('Loans modal state changed:', isLoansModalOpen);
+  }, [isLoansModalOpen]);
+
+  // Debug loans data changes
+  useEffect(() => {
+    console.log('Loans data changed:', {
+      data: loansData,
+      loading: loansLoading,
+      error: loansError,
+      dataLength: loansData ? (Array.isArray(loansData) ? loansData.length : 'Not array') : 'No data'
+    });
+  }, [loansData, loansLoading, loansError]);
 
   // Fetch profile data when component mounts
   useEffect(() => {
@@ -123,6 +155,20 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       icon: Award,
       color: 'bg-orange-500',
       textColor: 'text-orange-600'
+    },
+    {
+      title: 'Get Loans',
+      value: "Loans",
+      icon: Award,
+      color: 'bg-orange-500',
+      textColor: 'text-orange-600'
+    },
+    {
+      title: 'Get All Loans Details',
+      value: loansData ? `${loansData.length || 0} loans` : 'Click to view',
+      icon: FileText,
+      color: 'bg-blue-500',
+      textColor: 'text-blue-600'
     }
   ];
 
@@ -184,6 +230,157 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
     fetchPendingPayments();
   };
 
+  // Function to handle loan application click
+  const handleLoanApplicationClick = () => {
+    setIsLoanApplicationModalOpen(true);
+  };
+
+  // Function to handle loan application submission
+  const handleLoanApplicationSubmit = async (loanData: any) => {
+    try {
+      // The API call is now handled in the LoanApplication component
+      console.log('Loan application submitted successfully:', loanData);
+      
+      // You could add a toast notification here instead of alert
+      // For now, we'll just log the success
+      console.log('Loan application processed:', loanData);
+      
+      // The modal will be closed automatically by the LoanApplication component
+      // after successful submission
+    } catch (error) {
+      console.error('Error in loan application submission handler:', error);
+      // Re-throw the error so the LoanApplication component can handle it
+      throw error;
+    }
+  };
+
+  // Function to handle loans details click
+  const handleLoansDetailsClick = () => {
+    console.log('Get All Loans Details clicked - opening modal and fetching data...');
+    setIsLoansModalOpen(true);
+    fetchLoansData();
+  };
+
+  // Function to fetch individual loan details
+  const fetchLoanDetails = async (loanId: string) => {
+    setLoanDetailsLoading(true);
+    setLoanDetailsError(null);
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`http://localhost:3500/api/loans/${loanId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: Failed to fetch loan details`;
+        
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (parseError) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText || 'Server error'}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      console.log('Loan details fetched successfully:', data);
+      setLoanDetails(data);
+    } catch (error) {
+      console.error('Failed to fetch loan details:', error);
+      setLoanDetailsError(error instanceof Error ? error.message : 'Failed to fetch loan details');
+    } finally {
+      setLoanDetailsLoading(false);
+    }
+  };
+
+  // Function to handle loan item click
+  const handleLoanClick = (loan: any) => {
+    console.log('Loan clicked:', loan);
+    setSelectedLoan(loan);
+    setIsLoanDetailsModalOpen(true);
+    fetchLoanDetails(loan.loanId);
+  };
+
+  // Function to fetch loans data
+  const fetchLoansData = async () => {
+    setLoansLoading(true);
+    setLoansError(null);
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch('http://localhost:3500/api/loans/my-loans', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: Failed to fetch loans`;
+        
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (parseError) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText || 'Server error'}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      console.log('Loans data fetched successfully:', data);
+      console.log('Data structure:', {
+        hasData: !!data,
+        hasDataProperty: !!(data && data.data),
+        isArray: Array.isArray(data),
+        dataType: typeof data,
+        keys: data ? Object.keys(data) : []
+      });
+      
+      if (data && data.data) {
+        console.log('Setting loans data from data.data:', data.data);
+        setLoansData(data.data);
+      } else if (data && Array.isArray(data)) {
+        console.log('Setting loans data from array:', data);
+        setLoansData(data);
+      } else {
+        console.log('Setting empty loans array');
+        setLoansData([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch loans:', error);
+      setLoansError(error instanceof Error ? error.message : 'Failed to fetch loans');
+      setLoansData([]);
+    } finally {
+      setLoansLoading(false);
+    }
+  };
+
   // Function to fetch payment requests from API
   const fetchPaymentRequests = async () => {
     setLoading(true);
@@ -195,7 +392,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/payment-requests/member/requests', {
+      const response = await fetch('http://localhost:3500/api/payment-requests/member/requests', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -215,14 +412,14 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       } else if (data && Array.isArray(data)) {
         setPaymentRequests(data);
       } else {
-        // If API response is empty or invalid, use mock data
-        setPaymentRequests(mockPaymentRequests);
+        // If API response is empty or invalid, use empty array
+        setPaymentRequests([]);
       }
     } catch (error) {
       console.error('Failed to fetch payment requests:', error);
       setError(error instanceof Error ? error.message : 'Failed to fetch payment requests');
-      // Fallback to mock data
-      setPaymentRequests(mockPaymentRequests);
+      // Fallback to empty array
+      setPaymentRequests([]);
     } finally {
       setLoading(false);
     }
@@ -246,7 +443,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         throw new Error('No authentication token found');
       }
       
-      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/payment-requests/create-razorpay-order', {
+      const response = await fetch('http://localhost:3500/api/payment-requests/create-razorpay-order', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -343,14 +540,14 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       const testSignature = 'razorpay_signature_here';
       
       console.log('Verifying Razorpay payment for requestId:', requestId);
-      console.log('Request URL:', 'https://psmw75hs-3100.inc1.devtunnels.ms/verify-razorpay-payment');
+      console.log('Request URL:', 'http://localhost:3500/verify-razorpay-payment');
       console.log('Request body:', { 
         requestId: requestId, 
         paymentId: testPaymentId, 
         signature: testSignature 
       });
       
-      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/payment-requests/verify-razorpay-payment', {
+      const response = await fetch('http://localhost:3500/api/payment-requests/verify-razorpay-payment', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -387,7 +584,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       const data = await response.json();
-      console.log('Verification API Response data:', data);
+      
       
       if (data && data.success) {
         setVerificationSuccess(`Payment verified successfully for ${requestId}`);
@@ -445,13 +642,13 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Processing UPI payment for requestId:', requestId);
-      console.log('Request URL:', 'https://psmw75hs-3100.inc1.devtunnels.ms/api/payment-requests/process-upi-payment');
+      console.log('Request URL:', 'http://localhost:3500/api/payment-requests/process-upi-payment');
       console.log('Request body:', { 
         requestId: requestId,
         paymentMethod: 'UPI'
       });
       
-      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/payment-requests/process-upi-payment', {
+      const response = await fetch('http://localhost:3500/api/payment-requests/process-upi-payment', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -487,8 +684,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       const data = await response.json();
-      console.log('UPI Payment API Response data:', data);
-      
+    
       if (data && data.success) {
         setUpiPaymentSuccess(`UPI payment initiated successfully for ${requestId}`);
         // Refresh pending payments to show updated status
@@ -538,9 +734,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching society member profile...');
-      console.log('Request URL:', 'https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/profile');
+      console.log('Request URL:', 'http://localhost:3500/api/society-member/profile');
       
-      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/profile', {
+      const response = await fetch('http://localhost:3500/api/society-member/profile', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -572,7 +768,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       const data = await response.json();
-      console.log('Profile API Response data:', data);
+  
       
       if (data && data.success && data.data) {
         setProfileData(data.data);
@@ -623,7 +819,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       
-      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/profile', {
+      const response = await fetch('http://localhost:3500/api/society-member/profile', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -706,9 +902,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Changing password...');
-      console.log('Request URL:', 'https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/change-password');
+      console.log('Request URL:', 'http://localhost:3500/api/society-member/change-password');
       
-      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/change-password', {
+      const response = await fetch('http://localhost:3500/api/society-member/change-password', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -791,9 +987,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching membership data...');
-      console.log('Request URL:', 'https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/membership');
+      console.log('Request URL:', 'http://localhost:3500/api/society-member/membership');
       
-      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/membership', {
+      const response = await fetch('http://localhost:3500/api/society-member/membership', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -873,9 +1069,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching referrals data...');
-      console.log('Request URL:', 'https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/referrals');
+      console.log('Request URL:', 'http://localhost:3500/api/society-member/referrals');
       
-      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/referrals', {
+      const response = await fetch('http://localhost:3500/api/society-member/referrals', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -955,9 +1151,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching agent codes data...');
-      console.log('Request URL:', 'https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/agent-codes');
+      console.log('Request URL:', 'http://localhost:3500/api/society-member/agent-codes');
       
-      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/society-member/agent-codes', {
+      const response = await fetch('http://localhost:3500/api/society-member/agent-codes', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1037,7 +1233,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching pending payments from API...');
-      const response = await fetch('https://psmw75hs-3100.inc1.devtunnels.ms/api/payment-requests/member/pending', {
+      const response = await fetch('http://localhost:3500/api/payment-requests/member/pending', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1190,11 +1386,15 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
             <div 
               key={index} 
               className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 ${
-                stat.title === 'Get All Agent Codes' ? 'cursor-pointer hover:shadow-md transition-all duration-200' : ''
+                (stat.title === 'Get All Agent Codes' || stat.title === 'Get Loans' || stat.title === 'Get All Loans Details') ? 'cursor-pointer hover:shadow-md transition-all duration-200' : ''
               }`}
               onClick={stat.title === 'Get All Agent Codes' ? () => {
                 setIsAgentCodesModalOpen(true);
                 fetchAgentCodesData();
+              } : stat.title === 'Get Loans' ? () => {
+                handleLoanApplicationClick();
+              } : stat.title === 'Get All Loans Details' ? () => {
+                handleLoansDetailsClick();
               } : undefined}
             >
               <div className="flex items-center">
@@ -1211,6 +1411,13 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       <span className="text-sm text-gray-500">Loading...</span>
                     </div>
                   ) : stat.title === 'Get All Agent Codes' && agentCodesError ? (
+                    <p className="text-sm text-red-500">Error loading</p>
+                  ) : stat.title === 'Get All Loans Details' && loansLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                      <span className="text-sm text-gray-500">Loading...</span>
+                    </div>
+                  ) : stat.title === 'Get All Loans Details' && loansError ? (
                     <p className="text-sm text-red-500">Error loading</p>
                   ) : (
                     <p className={`text-lg font-semibold ${stat.textColor}`}>
@@ -1526,7 +1733,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Document Preview</p>
                       <div className="relative group">
                         <img
-                          src={`https://psmw75hs-3100.inc1.devtunnels.ms/${profileData.kycDocuments.aadharCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
+                          src={`http://localhost:3500/${profileData.kycDocuments.aadharCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
                           alt="Aadhar Card"
                           className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
                           onError={(e) => {
@@ -1562,7 +1769,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Document Preview</p>
                       <div className="relative group">
                         <img
-                          src={`https://psmw75hs-3100.inc1.devtunnels.ms/${profileData.kycDocuments.panCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
+                          src={`http://localhost:3500/${profileData.kycDocuments.panCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
                           alt="PAN Card"
                           className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
                           onError={(e) => {
@@ -1592,7 +1799,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Photo Preview</p>
                       <div className="relative group">
                         <img
-                          src={`https://psmw75hs-3100.inc1.devtunnels.ms/${profileData.kycDocuments.profilePhoto.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
+                          src={`http://localhost:3500/${profileData.kycDocuments.profilePhoto.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
                           alt="Profile Photo"
                           className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
                           onError={(e) => {
@@ -2945,6 +3152,504 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
           </div>
         </div>
       )}
+
+            {/* Loans Details Modal */}
+      {isLoansModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    All Loans Details
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    View and manage all your loan applications
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsLoansModalOpen(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              {/* Error Display */}
+              {loansError && (
+                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+                      <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    </div>
+                    <span className="text-red-800 dark:text-red-200 font-medium">
+                      {loansError}
+                    </span>
+                  </div>
+                  <p className="text-red-700 dark:text-red-300 text-sm mt-1">
+                    Unable to fetch loans data. Please try again later.
+                  </p>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {loansLoading && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400">Fetching loans data...</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Loans Data Display */}
+              {!loansLoading && loansData && (
+                <div className="space-y-6">
+                  {/* Summary Section */}
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+                    <div className="flex items-center space-x-2 mb-4">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                        <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200">
+                        Loans Summary
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <p className="text-sm text-blue-600 dark:text-blue-400">Total Loans</p>
+                        <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">
+                          {loansData.pagination?.totalLoans || 0}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-blue-600 dark:text-blue-400">Active Loans</p>
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                          {loansData.loans?.filter((loan: any) => loan.status === 'APPROVED').length || 0}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-blue-600 dark:text-blue-400">Pending Loans</p>
+                        <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                          {loansData.loans?.filter((loan: any) => loan.status === 'PENDING').length || 0}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-blue-600 dark:text-blue-400">Rejected Loans</p>
+                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                          {loansData.loans?.filter((loan: any) => loan.status === 'REJECTED').length || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Loans List */}
+                  {loansData.loans && loansData.loans.length > 0 ? (
+                    <div className="space-y-4">
+                      {loansData.loans.map((loan: any, index: number) => (
+                        <div 
+                          key={loan.loanId || index} 
+                          className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                          onClick={() => handleLoanClick(loan)}
+                        >
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <div className={`p-2 rounded-lg ${
+                                loan.loanType === 'GOLD' ? 'bg-yellow-100 dark:bg-yellow-900' :
+                                loan.loanType === 'EDUCATION' ? 'bg-blue-100 dark:bg-blue-900' :
+                                loan.loanType === 'EMERGENCY' ? 'bg-red-100 dark:bg-red-900' :
+                                'bg-green-100 dark:bg-green-900'
+                              }`}>
+                                {loan.loanType === 'GOLD' ? <Gem className="w-5 h-5 text-yellow-600" /> :
+                                 loan.loanType === 'EDUCATION' ? <GraduationCap className="w-5 h-5 text-blue-600" /> :
+                                 loan.loanType === 'EMERGENCY' ? <AlertTriangle className="w-5 h-5 text-red-600" /> :
+                                 <User className="w-5 h-5 text-gray-600" />}
+                              </div>
+                              <div>
+                                <h3 className="font-medium text-gray-900 dark:text-white">
+                                  {loan.loanType} Loan
+                                </h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  ID: {loan.loanId}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-gray-900 dark:text-white">
+                                ₹{loan.amount?.toLocaleString() || 'N/A'}
+                              </div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                {loan.duration} months
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Purpose</p>
+                              <p className="font-medium text-gray-900 dark:text-white">{loan.purpose || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Status</p>
+                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                loan.status === 'APPROVED' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                loan.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                loan.status === 'REJECTED' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                                'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                              }`}>
+                                {loan.status || 'UNKNOWN'}
+                              </span>
+                            </div>
+                          </div>
+
+                        
+                          {/* {loan.loanType === 'GOLD' && (
+                            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                              <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">Gold Loan Details</h4>
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div>
+                                  <span className="text-yellow-600 dark:text-yellow-400">Type:</span> {loan.collateralType?.replace('_', ' ') || 'N/A'}
+                                </div>
+                                <div>
+                                  <span className="text-yellow-600 dark:text-yellow-400">Weight:</span> {loan.collateralWeight || 'N/A'}g
+                                </div>
+                                <div>
+                                  <span className="text-yellow-600 dark:text-yellow-400">Purity:</span> {loan.collateralPurity || 'N/A'}%
+                                </div>
+                                <div>
+                                  <span className="text-yellow-600 dark:text-yellow-400">Value:</span> ₹{loan.collateralEstimatedValue?.toLocaleString() || 'N/A'}
+                                </div>
+                              </div>
+                            </div>
+                          )} */}
+
+                          {/* {loan.loanType === 'EDUCATION' && (
+                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                              <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">Education Loan Details</h4>
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div>
+                                  <span className="text-blue-600 dark:text-blue-400">Institution:</span> {loan.institution || 'N/A'}
+                                </div>
+                                <div>
+                                  <span className="text-blue-600 dark:text-blue-400">Course:</span> {loan.course || 'N/A'}
+                                </div>
+                                <div>
+                                  <span className="text-blue-600 dark:text-blue-400">Duration:</span> {loan.courseDuration || 'N/A'}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {loan.loanType === 'EMERGENCY' && (
+                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                              <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">Emergency Loan Details</h4>
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div>
+                                  <span className="text-red-600 dark:text-red-400">Type:</span> {loan.emergencyType?.replace('_', ' ') || 'N/A'}
+                                </div>
+                                <div>
+                                  <span className="text-red-600 dark:text-red-400">Urgency:</span> {loan.urgency || 'N/A'}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {loan.loanType === 'PERSONAL' && (
+                            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                              <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">Personal Loan Details</h4>
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div>
+                                  <span className="text-green-600 dark:text-green-400">Employment:</span> {loan.employmentType?.replace('_', ' ') || 'N/A'}
+                                </div>
+                                <div>
+                                  <span className="text-green-600 dark:text-green-400">Income:</span> ₹{loan.monthlyIncome?.toLocaleString() || 'N/A'}
+                                </div>
+                                <div>
+                                  <span className="text-green-600 dark:text-green-400">Obligations:</span> ₹{loan.existingObligations?.toLocaleString() || 'N/A'}
+                                </div>
+                              </div>
+                            </div>
+                          )} */}
+
+                          {/* Financial Details */}
+                          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Financial Details</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                              <div>
+                                <span className="text-gray-500 dark:text-gray-400">EMI Amount:</span>
+                                <p className="font-medium text-gray-900 dark:text-white">₹{loan.emiAmount?.toLocaleString() || 'N/A'}</p>
+                              </div>
+                              <div>
+                                <span className="text-gray-500 dark:text-gray-400">Total Amount:</span>
+                                <p className="font-medium text-gray-900 dark:text-white">₹{loan.totalAmount?.toLocaleString() || 'N/A'}</p>
+                              </div>
+                              <div>
+                                <span className="text-gray-500 dark:text-gray-400">Current Balance:</span>
+                                <p className="font-medium text-gray-900 dark:text-white">₹{loan.currentBalance?.toLocaleString() || 'N/A'}</p>
+                              </div>
+                              <div>
+                                <span className="text-gray-500 dark:text-gray-400">Installments:</span>
+                                <p className="font-medium text-gray-900 dark:text-white">{loan.totalInstallments || 0} total</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Additional Details */}
+                          {loan.remarks && (
+                            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                <span className="font-medium">Remarks:</span> {loan.remarks}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                      <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <p>No loans found</p>
+                      <p className="text-sm">You haven't applied for any loans yet</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {loansData && loansData.pagination && (
+                  <span>Total Loans: <span className="font-semibold">{loansData.pagination.totalLoans}</span></span>
+                )}
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setIsLoansModalOpen(false)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={fetchLoansData}
+                  disabled={loansLoading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                >
+                  {loansLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Refreshing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      <span>Refresh</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loan Details Modal */}
+      {isLoanDetailsModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Loan Details
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {selectedLoan?.loanType} Loan - {selectedLoan?.loanId}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsLoanDetailsModalOpen(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              {/* Error Display */}
+              {loanDetailsError && (
+                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="w-5 h-5 text-red-500" />
+                    <span className="text-red-800 dark:text-red-200 font-medium">Error Loading Loan Details</span>
+                  </div>
+                  <p className="text-red-700 dark:text-red-300 mt-1">{loanDetailsError}</p>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {loanDetailsLoading && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Loader2 className="w-12 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400">Loading loan details...</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Loan Details Display */}
+              {!loanDetailsLoading && !loanDetailsError && loanDetails && (
+                <div className="space-y-6">
+                  {/* Basic Loan Information */}
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4">Basic Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-sm text-blue-600 dark:text-blue-400">Loan ID</p>
+                        <p className="font-medium text-blue-800 dark:text-blue-200">{loanDetails.loanId || selectedLoan?.loanId}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-blue-600 dark:text-blue-400">Loan Type</p>
+                        <p className="font-medium text-blue-800 dark:text-blue-200">{loanDetails.loanType || selectedLoan?.loanType}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-blue-600 dark:text-blue-400">Status</p>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                          loanDetails.status === 'APPROVED' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                          loanDetails.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                          loanDetails.status === 'REJECTED' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                        }`}>
+                          {loanDetails.status || selectedLoan?.status || 'UNKNOWN'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Financial Details */}
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-4">Financial Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-sm text-green-600 dark:text-green-400">Principal Amount</p>
+                        <p className="text-2xl font-bold text-green-800 dark:text-green-200">₹{loanDetails.amount?.toLocaleString() || selectedLoan?.amount?.toLocaleString() || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-green-600 dark:text-green-400">EMI Amount</p>
+                        <p className="text-2xl font-bold text-green-800 dark:text-green-200">₹{loanDetails.emiAmount?.toLocaleString() || selectedLoan?.emiAmount?.toLocaleString() || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-green-600 dark:text-green-400">Total Amount</p>
+                        <p className="text-2xl font-bold text-green-800 dark:text-green-200">₹{loanDetails.totalAmount?.toLocaleString() || selectedLoan?.totalAmount?.toLocaleString() || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-green-600 dark:text-green-400">Current Balance</p>
+                        <p className="text-2xl font-bold text-green-800 dark:text-green-200">₹{loanDetails.currentBalance?.toLocaleString() || selectedLoan?.currentBalance?.toLocaleString() || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Loan Terms */}
+                  <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200 mb-4">Loan Terms</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-sm text-purple-600 dark:text-purple-400">Duration</p>
+                        <p className="font-medium text-purple-800 dark:text-purple-200">{loanDetails.duration || selectedLoan?.duration || 'N/A'} months</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-purple-600 dark:text-purple-400">Purpose</p>
+                        <p className="font-medium text-purple-800 dark:text-purple-200">{loanDetails.purpose || selectedLoan?.purpose || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-purple-600 dark:text-purple-400">Installments</p>
+                        <p className="font-medium text-purple-800 dark:text-purple-200">{loanDetails.totalInstallments || selectedLoan?.totalInstallments || 0} total</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Installment Status */}
+                  <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-orange-800 dark:text-orange-200 mb-4">Installment Status</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <p className="text-sm text-orange-600 dark:text-orange-400">Total Installments</p>
+                        <p className="text-2xl font-bold text-orange-800 dark:text-orange-200">{loanDetails.totalInstallments || selectedLoan?.totalInstallments || 0}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-orange-600 dark:text-orange-400">Paid Installments</p>
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">{loanDetails.paidInstallments || selectedLoan?.paidInstallments || 0}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-orange-600 dark:text-orange-400">Pending Installments</p>
+                        <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{loanDetails.pendingInstallments || selectedLoan?.pendingInstallments || 0}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Overdue Information */}
+                  {(loanDetails.isOverdue || selectedLoan?.isOverdue) && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+                      <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-4 flex items-center">
+                        <AlertTriangle className="w-5 h-5 mr-2" />
+                        Overdue Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-red-600 dark:text-red-400">Overdue Amount</p>
+                          <p className="font-medium text-red-800 dark:text-red-200">₹{loanDetails.overdueAmount?.toLocaleString() || selectedLoan?.overdueAmount?.toLocaleString() || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-red-600 dark:text-red-400">Late Fee</p>
+                          <p className="font-medium text-red-800 dark:text-red-200">₹{loanDetails.totalLateFee?.toLocaleString() || selectedLoan?.totalLateFee?.toLocaleString() || 'N/A'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Raw API Response (for debugging) */}
+                 
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Loan ID: <span className="font-semibold">{selectedLoan?.loanId}</span>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setIsLoanDetailsModalOpen(false)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loan Application Modal */}
+      <LoanApplication
+        isOpen={isLoanApplicationModalOpen}
+        onClose={() => setIsLoanApplicationModalOpen(false)}
+        onSubmit={handleLoanApplicationSubmit}
+      />
 
       {/* Change Password Modal */}
       {isChangePasswordModalOpen && (

@@ -214,7 +214,7 @@ export default function Courses() {
                   {/* Course Image */}
                   {course.thumbnail && (
                     <img 
-                      src={`https://psmw75hs-3100.inc1.devtunnels.ms${course.thumbnail}`}
+                      src={`http://localhost:3500${course.thumbnail}`}
                       alt={course.title}
                       className="w-full h-48 object-cover"
                       onError={(e) => {
