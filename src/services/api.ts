@@ -360,3 +360,69 @@ export const submitLoanApplication = async (loanData: any, token: string) => {
     throw error;
   }
 };
+
+export const uploadBankDocument = async (formData: FormData, token: string) => {
+  try {
+    const response = await fetch('http://localhost:3500/api/society-member/upload-bank-document', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to upload bank document.');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Bank Document Upload API error:', error);
+    throw error;
+  }
+};
+
+export const getBankDocuments = async (token: string) => {
+  try {
+    const response = await fetch('http://localhost:3500/api/society-member/bank-documents', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch bank documents.');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Get Bank Documents API error:', error);
+    throw error;
+  }
+};
+
+export const getLoanPenaltyDetails = async (loanId: string, token: string) => {
+  try {
+    const response = await fetch(`http://localhost:3500/api/loans/${loanId}/penalty-details`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch penalty details.');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Get Loan Penalty Details API error:', error);
+    throw error;
+  }
+};

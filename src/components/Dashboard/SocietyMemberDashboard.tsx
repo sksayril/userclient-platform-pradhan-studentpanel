@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Award, Calendar, TrendingUp, UserCheck, FileText, CreditCard , Plus, Clock, X, Loader2, AlertCircle, RefreshCw, Gem, GraduationCap, AlertTriangle, User, CheckCircle, XCircle } from 'lucide-react';
 import LoanApplication from './LoanApplication';
+import { uploadBankDocument, getBankDocuments, getLoanPenaltyDetails } from '../../services/api';
 
 interface SocietyMemberDashboardProps {
   onLogout: () => void;
@@ -113,10 +114,44 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
   const [loanDetailsError, setLoanDetailsError] = useState<string | null>(null);
   const [isLoanDetailsModalOpen, setIsLoanDetailsModalOpen] = useState(false);
 
+  // State for bank document upload
+  const [isBankDocumentModalOpen, setIsBankDocumentModalOpen] = useState(false);
+  const [bankDocumentFile, setBankDocumentFile] = useState<File | null>(null);
+  const [documentType, setDocumentType] = useState<'accountStatement' | 'passbook'>('accountStatement');
+  const [bankDocumentLoading, setBankDocumentLoading] = useState(false);
+  const [bankDocumentError, setBankDocumentError] = useState<string | null>(null);
+  const [bankDocumentSuccess, setBankDocumentSuccess] = useState<string | null>(null);
+
+  // State for bank documents list
+  const [bankDocumentsData, setBankDocumentsData] = useState<any>(null);
+  const [bankDocumentsLoading, setBankDocumentsLoading] = useState(false);
+  const [bankDocumentsError, setBankDocumentsError] = useState<string | null>(null);
+  const [isBankDocumentsModalOpen, setIsBankDocumentsModalOpen] = useState(false);
+
+  // State for penalty data
+  const [penaltyData, setPenaltyData] = useState<any>(null);
+  const [penaltyLoading, setPenaltyLoading] = useState(false);
+  const [penaltyError, setPenaltyError] = useState<string | null>(null);
+  const [isPenaltyModalOpen, setIsPenaltyModalOpen] = useState(false);
+  const [selectedLoanForPenalty, setSelectedLoanForPenalty] = useState<any>(null);
+  const [penaltyInitialLoading, setPenaltyInitialLoading] = useState(false);
+
   // Debug loans modal state changes
   useEffect(() => {
     console.log('Loans modal state changed:', isLoansModalOpen);
   }, [isLoansModalOpen]);
+
+  // Reset bank document modal state when it opens
+  useEffect(() => {
+    if (isBankDocumentModalOpen) {
+      setBankDocumentFile(null);
+      setDocumentType('accountStatement');
+      setBankDocumentError(null);
+      setBankDocumentSuccess(null);
+    }
+  }, [isBankDocumentModalOpen]);
+
+
 
   // Debug loans data changes
   useEffect(() => {
@@ -169,6 +204,27 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       icon: FileText,
       color: 'bg-blue-500',
       textColor: 'text-blue-600'
+    },
+    {
+      title: 'Upload Bank Document',
+      value: "Upload",
+      icon: FileText,
+      color: 'bg-green-500',
+      textColor: 'text-green-600'
+    },
+    {
+      title: 'Get All Bank Documents',
+      value: bankDocumentsData ? `${Array.isArray(bankDocumentsData) ? bankDocumentsData.length : (bankDocumentsData.data ? bankDocumentsData.data.length : 0)} documents` : 'Click to view',
+      icon: FileText,
+      color: 'bg-purple-500',
+      textColor: 'text-purple-600'
+    },
+    {
+      title: 'Penalty',
+      value: "View Penalties",
+      icon: AlertTriangle,
+      color: 'bg-red-500',
+      textColor: 'text-red-600'
     }
   ];
 
@@ -314,6 +370,198 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
     setSelectedLoan(loan);
     setIsLoanDetailsModalOpen(true);
     fetchLoanDetails(loan.loanId);
+  };
+
+
+
+  // Function to fetch bank documents data
+  const fetchBankDocumentsData = async () => {
+    setBankDocumentsLoading(true);
+    setBankDocumentsError(null);
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const data = await getBankDocuments(token);
+      console.log('Bank documents data fetched successfully:', data);
+      console.log('Data structure:', {
+        hasData: !!data,
+        hasDataProperty: !!(data && data.data),
+        dataKeys: data ? Object.keys(data) : [],
+        dataDataKeys: data && data.data ? Object.keys(data.data) : []
+      });
+      
+      // Handle the new API response format where accountStatement and passbook are in data object
+      if (data && data.data && (data.data.accountStatement || data.data.passbook)) {
+        console.log('Setting bank documents data from new format:', data.data);
+        // Convert local file paths to accessible URLs
+        const processedData = {
+          ...data.data,
+          accountStatement: data.data.accountStatement ? (() => {
+            const convertedPath = `http://localhost:3500/${data.data.accountStatement.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/new/backend/', '')}`;
+            console.log('Original accountStatement path:', data.data.accountStatement);
+            console.log('Converted accountStatement URL:', convertedPath);
+            return convertedPath;
+          })() : null,
+          passbook: data.data.passbook ? (() => {
+            const convertedPath = `http://localhost:3500/${data.data.passbook.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/new/backend/', '')}`;
+            console.log('Original passbook path:', data.data.passbook);
+            console.log('Converted passbook URL:', convertedPath);
+            return convertedPath;
+          })() : null
+        };
+        console.log('Processed data:', processedData);
+        setBankDocumentsData(processedData);
+      } else if (data && data.data) {
+        console.log('Setting bank documents data from data.data:', data.data);
+        setBankDocumentsData(data.data);
+      } else if (data && Array.isArray(data)) {
+        console.log('Setting bank documents data from array:', data);
+        setBankDocumentsData(data);
+      } else {
+        console.log('Setting empty bank documents array');
+        setBankDocumentsData([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch bank documents:', error);
+      setBankDocumentsError(error instanceof Error ? error.message : 'Failed to fetch bank documents');
+      setBankDocumentsData([]);
+    } finally {
+      setBankDocumentsLoading(false);
+    }
+  };
+
+    // Function to fetch penalty data
+  const fetchPenaltyData = async () => {
+    setPenaltyLoading(true);
+    setPenaltyError(null);
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      // Check if we have loans data to get penalty details
+      if (!loansData || !loansData.loans || loansData.loans.length === 0) {
+        // If no loans, show empty state
+        setPenaltyData([]);
+        return;
+      }
+      
+      // Get penalty details for all loans
+      const penaltyPromises = loansData.loans.map(async (loan: any) => {
+        try {
+          const penaltyResponse = await getLoanPenaltyDetails(loan.loanId, token);
+          return {
+            loanId: loan.loanId,
+            loanType: loan.loanType,
+            loanAmount: loan.amount,
+            ...penaltyResponse.data // Assuming the API returns data in this format
+          };
+        } catch (error) {
+          console.error(`Failed to fetch penalty for loan ${loan.loanId}:`, error);
+          return null;
+        }
+      });
+      
+      const penaltyResults = await Promise.all(penaltyPromises);
+      const validPenalties = penaltyResults.filter(result => result !== null);
+      
+      setPenaltyData(validPenalties);
+      console.log('Penalty data fetched successfully:', validPenalties);
+    } catch (error) {
+      console.error('Failed to fetch penalty data:', error);
+      setPenaltyError(error instanceof Error ? error.message : 'Failed to fetch penalty data');
+      setPenaltyData([]);
+    } finally {
+      setPenaltyLoading(false);
+    }
+  };
+
+  // Function to handle penalty click
+  const handlePenaltyClick = async () => {
+    console.log('Penalty clicked - opening modal and fetching data...');
+    setIsPenaltyModalOpen(true);
+    setPenaltyInitialLoading(true);
+    
+    try {
+      // If we don't have loans data, fetch it first
+      if (!loansData || !loansData.loans || loansData.loans.length === 0) {
+        await fetchLoansData();
+      }
+      
+      // Then fetch penalty data
+      await fetchPenaltyData();
+    } catch (error) {
+      console.error('Failed to fetch data for penalties:', error);
+      setPenaltyError('Failed to load penalty data. Please try again.');
+    } finally {
+      setPenaltyInitialLoading(false);
+    }
+  };
+
+  // Function to handle bank document upload
+  const handleBankDocumentUpload = async () => {
+    if (!bankDocumentFile) {
+      setBankDocumentError('Please select a file to upload');
+      return;
+    }
+
+    // Validate file size (10MB limit)
+    if (bankDocumentFile.size > 10 * 1024 * 1024) {
+      setBankDocumentError('File size must be less than 10MB');
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(bankDocumentFile.type)) {
+      setBankDocumentError('Please upload a valid file type (PDF, JPG, PNG, GIF)');
+      return;
+    }
+
+    setBankDocumentLoading(true);
+    setBankDocumentError(null);
+    setBankDocumentSuccess(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found. Please login again.');
+      }
+
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('bankDocument', bankDocumentFile);
+      formData.append('documentType', documentType);
+
+      // Make API call to upload bank document
+      const data = await uploadBankDocument(formData, token);
+      console.log('Bank document uploaded successfully:', data);
+      
+      setBankDocumentSuccess('Bank document uploaded successfully!');
+      
+      // Reset form
+      setBankDocumentFile(null);
+      setDocumentType('accountStatement');
+      
+      // Auto-close modal after 2 seconds
+      setTimeout(() => {
+        setIsBankDocumentModalOpen(false);
+        setBankDocumentSuccess(null);
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error uploading bank document:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload bank document. Please try again.';
+      setBankDocumentError(errorMessage);
+    } finally {
+      setBankDocumentLoading(false);
+    }
   };
 
   // Function to fetch loans data
@@ -684,7 +932,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       const data = await response.json();
-    
+      
       if (data && data.success) {
         setUpiPaymentSuccess(`UPI payment initiated successfully for ${requestId}`);
         // Refresh pending payments to show updated status
@@ -850,7 +1098,6 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       const data = await response.json();
-      console.log('Update Profile API Response data:', data);
       
       if (data && data.success) {
         setUpdateProfileSuccess('Profile updated successfully!');
@@ -935,7 +1182,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       const data = await response.json();
-      console.log('Change Password API Response data:', data);
+    
       
       if (data && data.success) {
         setChangePasswordSuccess('Password changed successfully!');
@@ -1386,15 +1633,22 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
             <div 
               key={index} 
               className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 ${
-                (stat.title === 'Get All Agent Codes' || stat.title === 'Get Loans' || stat.title === 'Get All Loans Details') ? 'cursor-pointer hover:shadow-md transition-all duration-200' : ''
+                (stat.title === 'Get All Agent Codes' || stat.title === 'Get Loans' || stat.title === 'Get All Loans Details' || stat.title === 'Upload Bank Document' || stat.title === 'Get All Bank Documents') ? 'cursor-pointer hover:shadow-md transition-all duration-200' : ''
               }`}
               onClick={stat.title === 'Get All Agent Codes' ? () => {
                 setIsAgentCodesModalOpen(true);
                 fetchAgentCodesData();
-              } : stat.title === 'Get Loans' ? () => {
-                handleLoanApplicationClick();
-              } : stat.title === 'Get All Loans Details' ? () => {
-                handleLoansDetailsClick();
+        } : stat.title === 'Get Loans' ? () => {
+          handleLoanApplicationClick();
+        } : stat.title === 'Get All Loans Details' ? () => {
+          handleLoansDetailsClick();
+        } : stat.title === 'Upload Bank Document' ? () => {
+          setIsBankDocumentModalOpen(true);
+        } : stat.title === 'Get All Bank Documents' ? () => {
+          setIsBankDocumentsModalOpen(true);
+          fetchBankDocumentsData();
+        } : stat.title === 'Penalty' ? () => {
+          handlePenaltyClick();
               } : undefined}
             >
               <div className="flex items-center">
@@ -3638,6 +3892,1081 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                 >
                   Close
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bank Document Upload Modal */}
+      {isBankDocumentModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                  <FileText className="w-6 h-6 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Upload Bank Document
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Upload your bank account statement or passbook
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsBankDocumentModalOpen(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {/* Error Display */}
+              {bankDocumentError && (
+                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="w-5 h-5 text-red-500" />
+                    <span className="text-red-800 dark:text-red-200 font-medium">Upload Error</span>
+                  </div>
+                  <p className="text-red-700 dark:text-red-300 mt-1">{bankDocumentError}</p>
+                </div>
+              )}
+
+              {/* Success Display */}
+              {bankDocumentSuccess && (
+                <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <span className="text-green-800 dark:text-green-200 font-medium">Upload Successful</span>
+                  </div>
+                  <p className="text-green-700 dark:text-green-300 mt-1">{bankDocumentSuccess}</p>
+                </div>
+              )}
+
+              {/* Document Type Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Document Type
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setDocumentType('accountStatement')}
+                    className={`p-3 rounded-lg border-2 transition-all duration-200 ${
+                      documentType === 'accountStatement'
+                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
+                    }`}
+                  >
+                    <div className="text-center">
+                      <FileText className="w-6 h-6 mx-auto mb-2" />
+                      <span className="text-sm font-medium">Account Statement</span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDocumentType('passbook')}
+                    className={`p-3 rounded-lg border-2 transition-all duration-200 ${
+                      documentType === 'passbook'
+                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
+                    }`}
+                  >
+                    <div className="text-center">
+                      <FileText className="w-6 h-6 mx-auto mb-2" />
+                      <span className="text-sm font-medium">Passbook</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* File Upload */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Bank Document
+                </label>
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center hover:border-gray-400 dark:hover:border-gray-500 transition-colors">
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.gif"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setBankDocumentFile(file);
+                        setBankDocumentError(null);
+                        setBankDocumentSuccess(null);
+                      }
+                    }}
+                    className="hidden"
+                    id="bankDocumentInput"
+                  />
+                  <label
+                    htmlFor="bankDocumentInput"
+                    className="cursor-pointer block"
+                  >
+                    {bankDocumentFile ? (
+                      <div className="space-y-2">
+                        <FileText className="w-8 h-8 mx-auto text-green-500" />
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {bankDocumentFile.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {(bankDocumentFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setBankDocumentFile(null);
+                          }}
+                          className="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600 transition-colors"
+                        >
+                          Remove File
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <FileText className="w-8 h-8 mx-auto text-gray-400" />
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          Click to upload or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          PDF, JPG, PNG, GIF up to 10MB
+                        </p>
+                      </div>
+                    )}
+                  </label>
+                </div>
+              </div>
+
+
+
+              {/* Upload Button */}
+              <button
+                onClick={handleBankDocumentUpload}
+                disabled={!bankDocumentFile || bankDocumentLoading}
+                className="w-full py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+              >
+                {bankDocumentLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-5 h-5" />
+                    <span>Upload Document</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Document Type: <span className="font-semibold capitalize">{documentType.replace(/([A-Z])/g, ' $1').trim()}</span>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setIsBankDocumentModalOpen(false)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bank Documents List Modal */}
+      {isBankDocumentsModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                  <FileText className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Bank Documents
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    View all your uploaded bank documents
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsBankDocumentsModalOpen(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              {/* Error Display */}
+              {bankDocumentsError && (
+                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="w-5 h-5 text-red-500" />
+                    <span className="text-red-800 dark:text-red-200 font-medium">Error Loading Documents</span>
+                  </div>
+                  <p className="text-red-700 dark:text-red-300 mt-1">{bankDocumentsError}</p>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {bankDocumentsLoading && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Loader2 className="w-12 h-8 animate-spin text-purple-600 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400">Loading bank documents...</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Documents List */}
+              {!bankDocumentsLoading && !bankDocumentsError && bankDocumentsData && (
+                <div>
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-purple-600 dark:text-purple-400">Total Documents</p>
+                          <p className="text-2xl font-bold text-purple-800 dark:text-purple-200">
+                            {(() => {
+                              if (Array.isArray(bankDocumentsData)) {
+                                return bankDocumentsData.length;
+                              } else if (bankDocumentsData && bankDocumentsData.data) {
+                                return bankDocumentsData.data.length;
+                              } else if (bankDocumentsData && (bankDocumentsData.accountStatement || bankDocumentsData.passbook)) {
+                                return (bankDocumentsData.accountStatement ? 1 : 0) + (bankDocumentsData.passbook ? 1 : 0);
+                              }
+                              return 0;
+                            })()}
+                          </p>
+                        </div>
+                        <FileText className="w-8 h-8 text-purple-500" />
+                      </div>
+                    </div>
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-blue-600 dark:text-blue-400">📄 Account Statements</p>
+                          <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">
+                            {(() => {
+                              if (Array.isArray(bankDocumentsData)) {
+                                return bankDocumentsData.filter((doc: any) => doc.documentType === 'accountStatement').length;
+                              } else if (bankDocumentsData && bankDocumentsData.data) {
+                                return bankDocumentsData.data.filter((doc: any) => doc.documentType === 'accountStatement').length;
+                              } else if (bankDocumentsData && bankDocumentsData.accountStatement) {
+                                return 1;
+                              }
+                              return 0;
+                            })()}
+                          </p>
+                          <p className="text-xs text-blue-600 dark:text-blue-400">Bank statements & records</p>
+                        </div>
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                          <FileText className="w-8 h-8 text-blue-600" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-green-600 dark:text-green-400">🏦 Passbooks</p>
+                          <p className="text-2xl font-bold text-green-800 dark:text-green-200">
+                            {(() => {
+                              if (Array.isArray(bankDocumentsData)) {
+                                return bankDocumentsData.filter((doc: any) => doc.documentType === 'passbook').length;
+                              } else if (bankDocumentsData && bankDocumentsData.data) {
+                                return bankDocumentsData.data.filter((doc: any) => doc.documentType === 'passbook').length;
+                              } else if (bankDocumentsData && bankDocumentsData.passbook) {
+                                return 1;
+                              }
+                              return 0;
+                            })()}
+                          </p>
+                          <p className="text-xs text-green-600 dark:text-green-400">Bank passbooks & books</p>
+                        </div>
+                        <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                          <FileText className="w-8 h-8 text-green-600" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {(() => {
+                    console.log('Rendering bank documents with data:', bankDocumentsData);
+                    // Handle the new API response format
+                    if (bankDocumentsData && (bankDocumentsData.accountStatement || bankDocumentsData.passbook)) {
+                      return (
+                        <div className="space-y-6">
+                          {/* Account Statement */}
+                          {bankDocumentsData.accountStatement && (
+                            <div className="border border-blue-200 dark:border-blue-700 rounded-lg p-6 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center space-x-3">
+                                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900">
+                                    <FileText className="w-5 h-5 text-blue-600" />
+                                  </div>
+                                  <div>
+                                    <h3 className="font-medium text-gray-900 dark:text-white">📄 Account Statement</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Bank statements & financial records</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                                    {bankDocumentsData.uploadedAt ? new Date(bankDocumentsData.uploadedAt).toLocaleDateString() : 'N/A'}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Account Statement Preview */}
+                              <div className="mb-4">
+                                <div className="flex items-center justify-between mb-3">
+                                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">📄 Account Statement Preview</p>
+                                  <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full">
+                                    Statement
+                                  </span>
+                                </div>
+                                
+                                <div className="border-2 border-dashed border-blue-200 dark:border-blue-700 rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+                                  <div className="relative">
+                                    <img
+                                      src={bankDocumentsData.accountStatement}
+                                      alt="Account Statement"
+                                      className="w-full h-64 object-contain bg-white dark:bg-gray-800"
+                                      onLoad={() => {
+                                        console.log('Account Statement image loaded successfully:', bankDocumentsData.accountStatement);
+                                      }}
+                                      onError={(e) => {
+                                        console.error('Account Statement image error:', e);
+                                        console.error('Failed URL:', bankDocumentsData.accountStatement);
+                                        const target = e.currentTarget as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        const fallbackDiv = target.nextElementSibling as HTMLElement;
+                                        if (fallbackDiv) fallbackDiv.style.display = 'flex';
+                                      }}
+                                    />
+                                    
+                                    {/* Fallback display for failed images */}
+                                    <div className="hidden h-64 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                      <div className="text-center">
+                                        <div className="w-20 h-20 mx-auto mb-3 rounded-full flex items-center justify-center bg-blue-100 dark:bg-blue-900">
+                                          <FileText className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                                          Account Statement
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                          Account Statement
+                                        </p>
+                                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                                          Image preview unavailable
+                                        </p>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Image Actions Overlay */}
+                                    <div className="absolute top-3 right-3 flex space-x-2">
+                                      <a
+                                        href={bankDocumentsData.accountStatement}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-3 py-1.5 bg-white/90 dark:bg-gray-800/90 text-gray-700 dark:text-gray-200 text-xs rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 shadow-lg backdrop-blur-sm"
+                                      >
+                                        👁️ View Full
+                                      </a>
+                                      <a
+                                        href={bankDocumentsData.accountStatement}
+                                        download="account-statement.png"
+                                        className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-lg"
+                                      >
+                                        📥 Download
+                                      </a>
+                                    </div>
+                                    
+                                    {/* Document Type Badge */}
+                                    <div className="absolute top-3 left-3">
+                                      <span className="px-3 py-1.5 text-xs font-medium rounded-lg shadow-lg bg-blue-600 text-white">
+                                        📊 Statement
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Passbook */}
+                          {bankDocumentsData.passbook && (
+                            <div className="border border-green-200 dark:border-green-700 rounded-lg p-6 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center space-x-3">
+                                  <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900">
+                                    <FileText className="w-5 h-5 text-green-600" />
+                                  </div>
+                                  <div>
+                                    <h3 className="font-medium text-gray-900 dark:text-white">🏦 Passbook</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Bank passbooks & account books</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                                    {bankDocumentsData.uploadedAt ? new Date(bankDocumentsData.uploadedAt).toLocaleDateString() : 'N/A'}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Passbook Preview */}
+                              <div className="mb-4">
+                                <div className="flex items-center justify-between mb-3">
+                                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">🏦 Passbook Preview</p>
+                                  <span className="text-xs px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full">
+                                    Passbook
+                                  </span>
+                                </div>
+                                
+                                <div className="border-2 border-dashed border-green-200 dark:border-green-700 rounded-lg overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+                                  <div className="relative">
+                                    <img
+                                      src={bankDocumentsData.passbook}
+                                      alt="Passbook"
+                                      className="w-full h-64 object-contain bg-white dark:bg-gray-800"
+                                      onLoad={() => {
+                                        console.log('Passbook image loaded successfully:', bankDocumentsData.passbook);
+                                      }}
+                                      onError={(e) => {
+                                        console.error('Passbook image error:', e);
+                                        console.error('Failed URL:', bankDocumentsData.passbook);
+                                        const target = e.currentTarget as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        const fallbackDiv = target.nextElementSibling as HTMLElement;
+                                        if (fallbackDiv) fallbackDiv.style.display = 'flex';
+                                      }}
+                                    />
+                                    
+                                    {/* Fallback display for failed images */}
+                                    <div className="hidden h-64 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                      <div className="text-center">
+                                        <div className="w-20 h-20 mx-auto mb-3 rounded-full flex items-center justify-center bg-green-100 dark:bg-green-900">
+                                          <FileText className="w-10 h-10 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                                          Passbook
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                          Passbook
+                                        </p>
+                                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                                          Image preview unavailable
+                                        </p>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Image Actions Overlay */}
+                                    <div className="absolute top-3 right-3 flex space-x-2">
+                                      <a
+                                        href={bankDocumentsData.passbook}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-3 py-1.5 bg-white/90 dark:bg-gray-800/90 text-gray-700 dark:text-gray-200 text-xs rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 shadow-lg backdrop-blur-sm"
+                                      >
+                                        👁️ View Full
+                                      </a>
+                                      <a
+                                        href={bankDocumentsData.passbook}
+                                        download="passbook.png"
+                                        className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-all duration-200 shadow-lg"
+                                      >
+                                        📥 Download
+                                      </a>
+                                    </div>
+                                    
+                                    {/* Document Type Badge */}
+                                    <div className="absolute top-3 left-3">
+                                      <span className="px-3 py-1.5 text-xs font-medium rounded-lg shadow-lg bg-green-600 text-white">
+                                        🏦 Passbook
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    
+                    // Handle the old array format
+                    const documents = Array.isArray(bankDocumentsData) ? bankDocumentsData : (bankDocumentsData.data ? bankDocumentsData.data : []);
+                    return documents.length > 0 ? (
+                      <div className="space-y-4">
+                        {documents.map((document: any, index: number) => (
+                          <div key={document.id || document._id || index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center space-x-3">
+                                <div className={`p-2 rounded-lg ${
+                                  document.documentType === 'accountStatement' ? 'bg-blue-100 dark:bg-blue-900' : 'bg-green-100 dark:bg-green-900'
+                                }`}>
+                                  <FileText className={`w-5 h-5 ${
+                                    document.documentType === 'accountStatement' ? 'text-blue-600' : 'text-green-600'
+                                  }`} />
+                                </div>
+                                <div>
+                                  <h3 className="font-medium text-gray-900 dark:text-white">
+                                    {document.documentType === 'accountStatement' ? '📄 Account Statement' : '🏦 Passbook'}
+                                  </h3>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    ID: {document.id || document._id || document.documentId || `Doc-${index + 1}`}
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {document.documentType === 'accountStatement' ? 'Bank statements & financial records' : 'Bank passbooks & account books'}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                  {document.uploadedAt ? new Date(document.uploadedAt).toLocaleDateString() : 
+                                   document.createdAt ? new Date(document.createdAt).toLocaleDateString() : 'N/A'}
+                                </div>
+                                <div className="text-xs text-gray-400 dark:text-gray-500">
+                                  {document.fileSize ? `${(document.fileSize / 1024 / 1024).toFixed(2)} MB` : 
+                                   document.size ? `${(document.size / 1024 / 1024).toFixed(2)} MB` : 'N/A'}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Document Preview */}
+                            {(() => {
+                              const fileUrl = document.fileUrl || document.url || document.downloadUrl || document.imageUrl;
+                              const fileName = document.fileName || document.originalName || document.name || 'Document';
+                              const fileType = document.fileType || document.mimeType || 'application/octet-stream';
+                              const documentType = document.documentType;
+                              
+                              // For accountStatement and passbook, always try to show image preview
+                              if (fileUrl && (documentType === 'accountStatement' || documentType === 'passbook')) {
+                                return (
+                                  <div className="mb-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        {documentType === 'accountStatement' ? '📄 Account Statement Preview' : '🏦 Passbook Preview'}
+                                      </p>
+                                      <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full">
+                                        {documentType === 'accountStatement' ? 'Statement' : 'Passbook'}
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="border-2 border-dashed border-blue-200 dark:border-blue-700 rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+                                      <div className="relative">
+                                                                                 <img
+                                           src={fileUrl}
+                                           alt={`${documentType === 'accountStatement' ? 'Account Statement' : 'Passbook'} - ${fileName}`}
+                                           className="w-full h-64 object-contain bg-white dark:bg-gray-800"
+                                           onError={(e) => {
+                                             console.error('Image preview error:', e);
+                                             // Show fallback for failed images
+                                             const target = e.currentTarget as HTMLImageElement;
+                                             target.style.display = 'none';
+                                             const fallbackDiv = target.nextElementSibling as HTMLElement;
+                                             if (fallbackDiv) fallbackDiv.style.display = 'flex';
+                                           }}
+                                         />
+                                        
+                                        {/* Fallback display for failed images */}
+                                        <div className="hidden h-64 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                          <div className="text-center">
+                                            <div className={`w-20 h-20 mx-auto mb-3 rounded-full flex items-center justify-center ${
+                                              documentType === 'accountStatement' ? 'bg-blue-100 dark:bg-blue-900' : 'bg-green-100 dark:bg-green-900'
+                                            }`}>
+                                              {documentType === 'accountStatement' ? (
+                                                <FileText className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+                                              ) : (
+                                                <FileText className="w-10 h-10 text-green-600 dark:text-green-400" />
+                                              )}
+                                            </div>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                                              {documentType === 'accountStatement' ? 'Account Statement' : 'Passbook'}
+                                            </p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                              {fileName}
+                                            </p>
+                                            <p className="text-xs text-gray-400 dark:text-gray-500">
+                                              Image preview unavailable
+                                            </p>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Image Actions Overlay */}
+                                        <div className="absolute top-3 right-3 flex space-x-2">
+                                          <a
+                                            href={fileUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-3 py-1.5 bg-white/90 dark:bg-gray-800/90 text-gray-700 dark:text-gray-200 text-xs rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 shadow-lg backdrop-blur-sm"
+                                          >
+                                            👁️ View Full
+                                          </a>
+                                          <a
+                                            href={fileUrl}
+                                            download={fileName}
+                                            className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-lg"
+                                          >
+                                            📥 Download
+                                          </a>
+                                        </div>
+                                        
+                                        {/* Document Type Badge */}
+                                        <div className="absolute top-3 left-3">
+                                          <span className={`px-3 py-1.5 text-xs font-medium rounded-lg shadow-lg ${
+                                            documentType === 'accountStatement' 
+                                              ? 'bg-blue-600 text-white' 
+                                              : 'bg-green-600 text-white'
+                                          }`}>
+                                            {documentType === 'accountStatement' ? '📊 Statement' : '🏦 Passbook'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Additional Document Info */}
+                                    <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                                      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2">
+                                        <p className="text-gray-500 dark:text-gray-400">File Type</p>
+                                        <p className="font-medium text-gray-900 dark:text-white">
+                                          {fileType.startsWith('image/') ? 'Image File' : fileType}
+                                        </p>
+                                      </div>
+                                      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2">
+                                        <p className="text-gray-500 dark:text-gray-400">Document Type</p>
+                                        <p className="font-medium text-gray-900 dark:text-white capitalize">
+                                          {documentType === 'accountStatement' ? 'Account Statement' : 'Passbook'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              
+                              // For other document types or when no image URL
+                              if (fileUrl) {
+                                return (
+                                  <div className="mb-4">
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Document Preview</p>
+                                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                                      {(() => {
+                                        if (fileType.startsWith('image/')) {
+                                          return (
+                                            <div className="relative">
+                                              <img
+                                                src={fileUrl}
+                                                alt={fileName}
+                                                className="w-full h-48 object-contain bg-gray-50 dark:bg-gray-800"
+                                                onError={(e) => {
+                                                  console.error('Image preview error:', e);
+                                                  e.currentTarget.style.display = 'none';
+                                                }}
+                                              />
+                                              <div className="absolute top-2 right-2">
+                                                <a
+                                                  href={fileUrl}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors"
+                                                >
+                                                  View Full
+                                                </a>
+                                              </div>
+                                            </div>
+                                          );
+                                        } else if (fileType === 'application/pdf') {
+                                          return (
+                                            <div className="h-48 bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+                                              <div className="text-center">
+                                                <FileText className="w-16 h-16 mx-auto text-gray-400 mb-2" />
+                                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                  {fileName}
+                                                </p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                  PDF Document
+                                                </p>
+                                                <a
+                                                  href={fileUrl}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="inline-flex items-center mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors"
+                                                >
+                                                  <FileText className="w-3 h-3 mr-1" />
+                                                  Open PDF
+                                                </a>
+                                              </div>
+                                            </div>
+                                          );
+                                        } else {
+                                          return (
+                                            <div className="h-48 bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+                                              <div className="text-center">
+                                                <FileText className="w-16 h-16 mx-auto text-gray-400 mb-2" />
+                                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                  {fileName}
+                                                </p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                  File Type: {fileType}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          );
+                                        }
+                                      })()}
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              
+                              return null;
+                            })()}
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">File Name</p>
+                                <p className="font-medium text-gray-900 dark:text-white">
+                                  {document.fileName || document.originalName || document.name || 'N/A'}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Status</p>
+                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                  document.status === 'VERIFIED' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                  document.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                  document.status === 'REJECTED' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                                  'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                                }`}>
+                                  {document.status || 'UNKNOWN'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Document Actions */}
+                            <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                Uploaded: {document.uploadedAt ? new Date(document.uploadedAt).toLocaleString() : 
+                                           document.createdAt ? new Date(document.createdAt).toLocaleString() : 'N/A'}
+                              </div>
+                              <div className="flex space-x-2">
+                                {(document.downloadUrl || document.fileUrl || document.url) && (
+                                  <a
+                                    href={document.downloadUrl || document.fileUrl || document.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors"
+                                  >
+                                    Download
+                                  </a>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    // Handle document deletion if needed
+                                    console.log('Delete document:', document.id || document._id);
+                                  }}
+                                  className="px-3 py-1 bg-red-600 text-white text-xs rounded-md hover:bg-red-700 transition-colors"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                        <p>No bank documents found</p>
+                        <p className="text-sm">You haven't uploaded any bank documents yet</p>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {bankDocumentsData && (
+                  <span>Total Documents: <span className="font-semibold">
+                    {(() => {
+                      if (Array.isArray(bankDocumentsData)) {
+                        return bankDocumentsData.length;
+                      } else if (bankDocumentsData && bankDocumentsData.data) {
+                        return bankDocumentsData.data.length;
+                      } else if (bankDocumentsData && (bankDocumentsData.accountStatement || bankDocumentsData.passbook)) {
+                        return (bankDocumentsData.accountStatement ? 1 : 0) + (bankDocumentsData.passbook ? 1 : 0);
+                      }
+                      return 0;
+                    })()}
+                  </span></span>
+                )}
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setIsBankDocumentsModalOpen(false)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={fetchBankDocumentsData}
+                  disabled={bankDocumentsLoading}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                >
+                  {bankDocumentsLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Refreshing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      <span>Refresh</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Penalty Modal */}
+      {isPenaltyModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+                  <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Penalty Details
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    View and manage your penalty charges
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsPenaltyModalOpen(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              {/* Error Display */}
+              {penaltyError && (
+                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="w-5 h-5 text-red-500" />
+                    <span className="text-red-800 dark:text-red-200 font-medium">Error Loading Penalties</span>
+                  </div>
+                  <p className="text-red-700 dark:text-red-300 mt-1">{penaltyError}</p>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {(penaltyLoading || penaltyInitialLoading) && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Loader2 className="w-12 h-8 animate-spin text-red-600 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {penaltyInitialLoading ? 'Loading loans and penalty data...' : 'Loading penalty details...'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Penalty List */}
+              {!penaltyLoading && !penaltyInitialLoading && !penaltyError && penaltyData && (
+                <div>
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-red-600 dark:text-red-400">Total Loans with Penalties</p>
+                          <p className="text-2xl font-bold text-red-800 dark:text-red-200">
+                            {penaltyData.length || 0}
+                          </p>
+                        </div>
+                        <AlertTriangle className="w-8 h-8 text-red-500" />
+                      </div>
+                    </div>
+                    <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-orange-600 dark:text-orange-400">Total Penalty Amount</p>
+                          <p className="text-2xl font-bold text-orange-800 dark:text-orange-200">
+                            ₹{penaltyData.reduce((sum: number, p: any) => sum + (p.penaltyAmount || 0), 0).toLocaleString()}
+                          </p>
+                        </div>
+                        <Clock className="w-8 h-8 text-orange-500" />
+                      </div>
+                    </div>
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-green-600 dark:text-green-400">Active Loans</p>
+                          <p className="text-2xl font-bold text-green-800 dark:text-green-200">
+                            {penaltyData.filter((p: any) => p.loanStatus === 'ACTIVE').length || 0}
+                          </p>
+                        </div>
+                        <CheckCircle className="w-8 h-8 text-green-500" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Penalty Items */}
+                  <div className="space-y-4">
+                    {penaltyData.map((penalty: any, index: number) => (
+                      <div key={penalty.loanId || index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900">
+                              <AlertTriangle className="w-5 h-5 text-red-600" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-gray-900 dark:text-white">Loan ID: {penalty.loanId}</h3>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {penalty.loanType} Loan - ₹{penalty.loanAmount?.toLocaleString() || 'N/A'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                              ₹{penalty.penaltyAmount?.toLocaleString() || '0'}
+                            </div>
+                            <div className="text-sm px-2 py-1 rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                              Penalty
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Loan Details */}
+                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          <div>
+                            <span className="font-medium">Loan Type:</span> {penalty.loanType || 'N/A'}
+                          </div>
+                          <div>
+                            <span className="font-medium">Loan Amount:</span> ₹{penalty.loanAmount?.toLocaleString() || 'N/A'}
+                          </div>
+                          <div>
+                            <span className="font-medium">Loan Status:</span> 
+                            <span className={`ml-1 px-2 py-1 rounded-full text-xs ${
+                              penalty.loanStatus === 'ACTIVE' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                              penalty.loanStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                              'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                            }`}>
+                              {penalty.loanStatus || 'N/A'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-medium">Penalty Amount:</span> ₹{penalty.penaltyAmount?.toLocaleString() || '0'}
+                          </div>
+                        </div>
+
+                        {/* Penalty Details */}
+                        {penalty.penaltyDetails && (
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-4">
+                            <h4 className="font-medium text-gray-900 dark:text-white mb-2">Penalty Details</h4>
+                            <div className="grid grid-cols-1 gap-2 text-sm">
+                              {penalty.penaltyDetails.reason && (
+                                <div>
+                                  <span className="font-medium">Reason:</span> {penalty.penaltyDetails.reason}
+                                </div>
+                              )}
+                              {penalty.penaltyDetails.date && (
+                                <div>
+                                  <span className="font-medium">Date:</span> {new Date(penalty.penaltyDetails.date).toLocaleDateString()}
+                                </div>
+                              )}
+                              {penalty.penaltyDetails.dueDate && (
+                                <div>
+                                  <span className="font-medium">Due Date:</span> {new Date(penalty.penaltyDetails.dueDate).toLocaleDateString()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            <span className="font-medium">Total Outstanding:</span> ₹{penalty.penaltyAmount?.toLocaleString() || '0'}
+                          </div>
+                          <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                            Pay Penalty
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {penaltyData.length === 0 && (
+                    <div className="text-center py-12">
+                      <AlertTriangle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500 text-lg font-medium mb-2">No Penalties Found</p>
+                      <p className="text-gray-400">You have no penalty charges on your loans at this time.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Total Penalty Amount: ₹{penaltyData ? penaltyData.reduce((sum: number, p: any) => sum + (p.penaltyAmount || 0), 0).toLocaleString() : '0'}
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setIsPenaltyModalOpen(false)}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={fetchPenaltyData}
+                    disabled={penaltyLoading}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                  >
+                    {penaltyLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Refreshing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        <span>Refresh</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
