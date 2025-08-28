@@ -234,7 +234,7 @@ export const getStudentEnrollments = async (token: string) => {
 };
 
 // Society Member API Functions
-export const loginSocietyMember = async (credentials: { email: string; password: string }) => {
+export const loginSocietyMember = async (credentials: { email?: string; password: string; memberId: string; accountNumber?: string }) => {
   try {
     const response = await fetch('http://localhost:3500/api/society-member/login', {
       method: 'POST',

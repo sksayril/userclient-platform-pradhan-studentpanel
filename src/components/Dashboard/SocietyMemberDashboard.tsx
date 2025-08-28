@@ -98,6 +98,19 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
   const [agentCodesError, setAgentCodesError] = useState<string | null>(null);
   const [isAgentCodesModalOpen, setIsAgentCodesModalOpen] = useState(false);
   
+  // State for upload receipt modal
+  const [isUploadReceiptModalOpen, setIsUploadReceiptModalOpen] = useState(false);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptLoading, setReceiptLoading] = useState(false);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
+  const [receiptSuccess, setReceiptSuccess] = useState<string | null>(null);
+  
+  // State for receipt status modal
+  const [isReceiptStatusModalOpen, setIsReceiptStatusModalOpen] = useState(false);
+  const [receiptStatusData, setReceiptStatusData] = useState<any[]>([]);
+  const [receiptStatusLoading, setReceiptStatusLoading] = useState(false);
+  const [receiptStatusError, setReceiptStatusError] = useState<string | null>(null);
+  
   // State for loan application modal
   const [isLoanApplicationModalOpen, setIsLoanApplicationModalOpen] = useState(false);
   
@@ -242,6 +255,13 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       icon: CreditCard,
       action: () => handlePendingPaymentsClick(),
       color: 'bg-green-500 hover:bg-green-600'
+    },
+    {
+      title: 'Upload Receipt',
+      description: 'Upload payment receipts and documents',
+      icon: FileText,
+      action: () => handleUploadReceiptClick(),
+      color: 'bg-blue-500 hover:bg-blue-600'
     }
   ];
 
@@ -284,6 +304,117 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
     console.log('Pending Payments clicked - opening modal and fetching data...');
     setIsPendingPaymentsModalOpen(true);
     fetchPendingPayments();
+  };
+
+  // Function to handle upload receipt click
+  const handleUploadReceiptClick = () => {
+    setIsUploadReceiptModalOpen(true);
+    // Reset form fields
+    setReceiptFile(null);
+    setReceiptError(null);
+    setReceiptSuccess(null);
+  };
+
+  // Function to handle receipt upload
+  const handleReceiptUpload = async () => {
+    if (!receiptFile) {
+      setReceiptError('Please select a file to upload');
+      return;
+    }
+
+    setReceiptLoading(true);
+    setReceiptError(null);
+    setReceiptSuccess(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const formData = new FormData();
+      formData.append('receiptImage', receiptFile);
+
+      // Call the actual API endpoint
+      const response = await fetch('http://localhost:3500/api/receipts/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to upload receipt');
+      }
+
+      const result = await response.json();
+      console.log('Receipt upload successful:', result);
+      
+      setReceiptSuccess('Receipt uploaded successfully!');
+      setReceiptFile(null);
+      
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setIsUploadReceiptModalOpen(false);
+        setReceiptSuccess(null);
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error uploading receipt:', error);
+      setReceiptError(error instanceof Error ? error.message : 'Failed to upload receipt');
+    } finally {
+      setReceiptLoading(false);
+    }
+  };
+
+  // Function to handle get receipt status
+  const handleGetReceiptStatus = async () => {
+    setReceiptStatusLoading(true);
+    setReceiptStatusError(null);
+    setReceiptStatusData([]);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Call the API to get my receipts
+      const response = await fetch('http://localhost:3500/api/receipts/my-receipts', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get receipt status');
+      }
+
+      const result = await response.json();
+      console.log('My receipts:', result);
+      
+      // Set the receipt data and open the status modal
+      // Handle the actual API response structure: { success: true, data: { receipts: [...] } }
+      if (result.success && result.data && result.data.receipts) {
+        setReceiptStatusData(result.data.receipts);
+      } else {
+        setReceiptStatusData([]);
+      }
+      setIsReceiptStatusModalOpen(true);
+      
+    } catch (error) {
+      console.error('Error getting receipt status:', error);
+      setReceiptStatusError(error instanceof Error ? error.message : 'Failed to get receipt status');
+      // Still open the modal to show the error
+      setIsReceiptStatusModalOpen(true);
+    } finally {
+      setReceiptStatusLoading(false);
+    }
   };
 
   // Function to handle loan application click
@@ -1866,25 +1997,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       fetchMembershipData();
                     }}
                   >
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Member Since</p>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white flex items-center space-x-2">
-                      <span>
-                        {profileData.memberSince ? new Date(profileData.memberSince).toLocaleDateString() : profileData.registrationDate ? new Date(profileData.registrationDate).toLocaleDateString() : 'N/A'}
-                      </span>
-                      <span className="text-blue-600 dark:text-blue-400 text-xs">(Click to view details)</span>
-                    </p>
+                   
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Status</p>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      profileData.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-400' :
-                      profileData.status === 'inactive' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-400' :
-                      profileData.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-400' :
-                      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
-                    }`}>
-                      {profileData.status || 'N/A'}
-                    </span>
-                  </div>
+                  
                   {profileData.membershipType && (
                     <div>
                       <p className="text-sm text-gray-600 dark:text-gray-400">Membership Type</p>
@@ -4968,6 +5083,331 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Receipt Modal */}
+      {isUploadReceiptModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Upload Receipt
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Upload your payment receipt image
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsUploadReceiptModalOpen(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {/* Success Message */}
+              {receiptSuccess && (
+                <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    <span className="text-green-800 dark:text-green-200 font-medium">
+                      Receipt Uploaded Successfully!
+                    </span>
+                  </div>
+                  <p className="text-green-700 dark:text-green-300 text-sm mt-1">
+                    {receiptSuccess}
+                  </p>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {receiptError && (
+                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+                      <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    </div>
+                    <span className="text-red-800 dark:text-red-200 font-medium">
+                      Upload Error
+                    </span>
+                  </div>
+                  <p className="text-red-700 dark:text-red-300 text-sm mt-1">
+                    {receiptError}
+                  </p>
+                </div>
+              )}
+
+              {/* Upload Form */}
+              <form onSubmit={(e) => { e.preventDefault(); handleReceiptUpload(); }} className="space-y-4">
+                {/* File Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Receipt Image <span className="text-red-500">*</span>
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                      id="receipt-upload"
+                      required
+                    />
+                    <label htmlFor="receipt-upload" className="cursor-pointer">
+                      {receiptFile ? (
+                        <div className="space-y-2">
+                          <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg mx-auto w-fit">
+                            <FileText className="w-8 h-8 text-blue-600 dark:text-blue-400 mx-auto" />
+                          </div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {receiptFile.name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {(receiptFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg mx-auto w-fit">
+                            <FileText className="w-8 h-8 text-gray-600 dark:text-gray-400 mx-auto" />
+                          </div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            Click to upload receipt image
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            JPEG, JPG, PNG, WebP (Max 5MB)
+                          </p>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                  {receiptFile && (
+                    <button
+                      type="button"
+                      onClick={() => setReceiptFile(null)}
+                      className="mt-2 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                    >
+                      Remove file
+                    </button>
+                  )}
+                </div>
+
+                {/* Form Actions */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <button
+                    type="button"
+                    onClick={() => setIsUploadReceiptModalOpen(false)}
+                    className="px-6 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <div className="flex space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => handleGetReceiptStatus()}
+                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      <span>Get Status</span>
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={receiptLoading || !receiptFile}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-500 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                    >
+                      {receiptLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-4 h-4" />
+                          <span>Upload Receipt</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Receipt Status Modal */}
+      {isReceiptStatusModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                  <RefreshCw className="w-6 h-6 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Receipt Status
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    View all your receipt uploads and their current status
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsReceiptStatusModalOpen(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              {/* Summary Section */}
+              {!receiptStatusLoading && receiptStatusData.length > 0 && (
+                <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                        <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-blue-800 dark:text-blue-200">
+                          Total Receipts: {receiptStatusData.length}
+                        </h3>
+                        <p className="text-sm text-blue-600 dark:text-blue-400">
+                          {receiptStatusData.filter(r => r.status === 'paid').length} Paid • {receiptStatusData.filter(r => r.status === 'pending').length} Pending
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Display */}
+              {receiptStatusError && (
+                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    <span className="text-red-800 dark:text-red-200 font-medium">
+                      Error Loading Receipts
+                    </span>
+                  </div>
+                  <p className="text-red-600 dark:text-red-300 text-sm mt-1">
+                    {receiptStatusError}
+                  </p>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {receiptStatusLoading && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-green-600 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400">Fetching receipt status...</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Receipts List */}
+              {!receiptStatusLoading && receiptStatusData.length > 0 && (
+                <div className="space-y-4">
+                  {receiptStatusData.map((receipt, index) => (
+                    <div key={receipt.receiptId || index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                            <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-gray-900 dark:text-white">
+                              Receipt #{receipt.receiptId}
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Created on {receipt.createdAt ? new Date(receipt.createdAt).toLocaleDateString() : 'Date not specified'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                            receipt.status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            receipt.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                            receipt.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                          }`}>
+                            {receipt.status === 'paid' ? '✅ Paid' :
+                             receipt.status === 'pending' ? '⏳ Pending' :
+                             receipt.status === 'rejected' ? '❌ Rejected' :
+                             '📋 ' + (receipt.status || 'Unknown')}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Receipt Details - Focus on Receipt ID and Status */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium text-gray-700 dark:text-gray-300">Receipt ID:</span>
+                          <span className="ml-2 text-gray-900 dark:text-white font-mono text-base">
+                            {receipt.receiptId}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700 dark:text-gray-300">Status:</span>
+                          <span className="ml-2 text-gray-900 dark:text-white capitalize text-base">
+                            {receipt.status}
+                          </span>
+                        </div>
+                        {receipt.receiptDate && (
+                          <div>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">Receipt Date:</span>
+                            <span className="ml-2 text-gray-900 dark:text-white">
+                              {new Date(receipt.receiptDate).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                        {receipt.paidAt && receipt.status === 'paid' && (
+                          <div>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">Paid At:</span>
+                            <span className="ml-2 text-gray-900 dark:text-white">
+                              {new Date(receipt.paidAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!receiptStatusLoading && receiptStatusData.length === 0 && !receiptStatusError && (
+                <div className="text-center py-12">
+                  <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-full w-fit mx-auto mb-4">
+                    <FileText className="w-8 h-8 text-gray-600 dark:text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    No Receipts Found
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    You haven't uploaded any receipts yet.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
