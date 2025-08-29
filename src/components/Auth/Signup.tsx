@@ -145,7 +145,7 @@ export default function Signup({ onSignup, onSwitchToLogin, onBackToUserType, us
                   <input 
                     type="text" 
                     placeholder="First Name" 
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500"
                     value={formData.firstName}
                     onChange={(e) => setFormData({...formData, firstName: e.target.value})}
                     required
@@ -156,7 +156,7 @@ export default function Signup({ onSignup, onSwitchToLogin, onBackToUserType, us
                   <input 
                     type="text" 
                     placeholder="Last Name" 
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500"
                     value={formData.lastName}
                     onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                     required
@@ -176,7 +176,7 @@ export default function Signup({ onSignup, onSwitchToLogin, onBackToUserType, us
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500"
                   placeholder="Enter your email"
                   required
                 />
@@ -192,7 +192,7 @@ export default function Signup({ onSignup, onSwitchToLogin, onBackToUserType, us
                 <input 
                   type="tel" 
                   placeholder="Phone Number" 
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500"
                   value={formData.phone}
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
                   required
@@ -208,7 +208,7 @@ export default function Signup({ onSignup, onSwitchToLogin, onBackToUserType, us
                 <input 
                   type="date" 
                   placeholder="Date of Birth" 
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-white text-gray-900"
                   value={formData.dateOfBirth}
                   onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})}
                   required
@@ -222,7 +222,7 @@ export default function Signup({ onSignup, onSwitchToLogin, onBackToUserType, us
               </label>
               <div className="relative mb-4">
                 <select 
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-white text-gray-900"
                   value={formData.gender}
                   onChange={(e) => setFormData({...formData, gender: e.target.value})}
                 >
@@ -241,7 +241,7 @@ export default function Signup({ onSignup, onSwitchToLogin, onBackToUserType, us
                 <input 
                   type="text" 
                   placeholder="Street" 
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500"
                   value={formData.address.street}
                   onChange={(e) => setFormData({...formData, address: {...formData.address, street: e.target.value}})}
                   required
@@ -252,7 +252,7 @@ export default function Signup({ onSignup, onSwitchToLogin, onBackToUserType, us
                   <input 
                     type="text" 
                     placeholder="City" 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500"
                     value={formData.address.city}
                     onChange={(e) => setFormData({...formData, address: {...formData.address, city: e.target.value}})}
                     required
@@ -262,7 +262,7 @@ export default function Signup({ onSignup, onSwitchToLogin, onBackToUserType, us
                   <input 
                     type="text" 
                     placeholder="State" 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500"
                     value={formData.address.state}
                     onChange={(e) => setFormData({...formData, address: {...formData.address, state: e.target.value}})}
                     required
@@ -273,7 +273,7 @@ export default function Signup({ onSignup, onSwitchToLogin, onBackToUserType, us
                 <input 
                   type="text" 
                   placeholder="Pincode" 
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500"
                   value={formData.address.pincode}
                   onChange={(e) => setFormData({...formData, address: {...formData.address, pincode: e.target.value}})}
                   required
@@ -292,7 +292,7 @@ export default function Signup({ onSignup, onSwitchToLogin, onBackToUserType, us
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500"
                   placeholder="Create a password"
                   required
                 />
@@ -317,7 +317,7 @@ export default function Signup({ onSignup, onSwitchToLogin, onBackToUserType, us
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 ${userType === 'student' ? 'focus:ring-green-500' : 'focus:ring-purple-500'} focus:border-transparent outline-none transition-all`}
+                  className={`w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 ${userType === 'student' ? 'focus:ring-green-500' : 'focus:ring-purple-500'} focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500`}
                   placeholder="Confirm your password"
                   required
                 />

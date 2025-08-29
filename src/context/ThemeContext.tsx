@@ -19,8 +19,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Update document class and local storage when theme changes
-    document.documentElement.classList.toggle('dark', theme === 'dark');
+    const root = document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(theme);
+    
+    // Also add/remove dark class for Tailwind
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    
     localStorage.setItem('theme', theme);
+    
+    // Debug logging
+    console.log('Theme changed to:', theme);
+    console.log('Document classes:', root.classList.toString());
+    console.log('Has dark class:', root.classList.contains('dark'));
   }, [theme]);
 
   const toggleTheme = () => {

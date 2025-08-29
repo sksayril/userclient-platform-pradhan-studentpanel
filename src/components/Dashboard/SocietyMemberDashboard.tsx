@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Award, Calendar, TrendingUp, UserCheck, FileText, CreditCard , Plus, Clock, X, Loader2, AlertCircle, RefreshCw, Gem, GraduationCap, AlertTriangle, User, CheckCircle, XCircle } from 'lucide-react';
+import { Users, Award, Calendar, TrendingUp, UserCheck, FileText, CreditCard , Plus, Clock, X, Loader2, AlertCircle, RefreshCw, Gem, GraduationCap, AlertTriangle, User, CheckCircle, XCircle, Sun, Moon } from 'lucide-react';
 import LoanApplication from './LoanApplication';
 import { uploadBankDocument, getBankDocuments, getLoanPenaltyDetails, getCDPenalties, getCDPenaltyDetails } from '../../services/api';
 import { getRazorpayConfig } from '../../config/razorpay';
+import { useTheme } from '../../context/ThemeContext';
 
 interface SocietyMemberDashboardProps {
   onLogout: () => void;
@@ -74,9 +75,19 @@ interface RazorpayOrderResponse {
 export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashboardProps) {
   const memberData = JSON.parse(localStorage.getItem('societyMember') || '{}');
   const memberEmail = localStorage.getItem('societyMemberEmail') || '';
+  const { theme, toggleTheme } = useTheme();
   
   // Razorpay configuration
   const razorpayConfig = getRazorpayConfig();
+  
+  // Force theme refresh on mount
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark' && !root.classList.contains('dark')) {
+      root.classList.add('dark');
+      console.log('Forced dark class addition');
+    }
+  }, [theme]);
   
   // State for payment requests modal
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -1977,6 +1988,21 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
                   {profileData ? (profileData.memberAccountNumber || profileData.memberId || profileData.id || 'N/A') : (memberData.memberAccountNumber || 'N/A')}
                 </p>
+              </div>
+              <button
+                onClick={toggleTheme}
+                className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+              >
+                {theme === 'light' ? (
+                  <Moon className="w-5 h-5" />
+                ) : (
+                  <Sun className="w-5 h-5" />
+                )}
+              </button>
+              {/* Debug info - remove this after testing */}
+              <div className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
+                Theme: {theme}
               </div>
               <button
                 onClick={onLogout}

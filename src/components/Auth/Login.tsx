@@ -151,15 +151,12 @@ export default function Login({ onLogin, onSwitchToSignup, onBackToUserType, use
                        setEmail(e.target.value);
                      }
                    }}
-                   className={`w-full ${userType === 'society-member' && loginMethod === 'accountNumber' ? 'px-4' : 'pl-10 pr-4'} py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all`}
+                   className={`w-full ${userType === 'society-member' && loginMethod === 'accountNumber' ? 'px-4' : 'pl-10 pr-4'} py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500`}
                    placeholder={userType === 'society-member' && loginMethod === 'accountNumber' ? 'Enter your account number' : 'Enter your email'}
                    required
                  />
                </div>
              </div>
-
-            
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Password
@@ -170,7 +167,7 @@ export default function Login({ onLogin, onSwitchToSignup, onBackToUserType, use
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500"
                   placeholder="Enter your password"
                   required
                 />

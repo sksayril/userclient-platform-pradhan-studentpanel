@@ -1,3 +1,34 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Dark mode support and smooth transitions */
+:root {
+  --transition-duration: 0.3s;
+}
+
+* {
+  transition: background-color var(--transition-duration) ease-in-out, 
+              border-color var(--transition-duration) ease-in-out,
+              color var(--transition-duration) ease-in-out;
+}
+
+/* Ensure dark mode is properly applied */
+.dark {
+  color-scheme: dark;
+}
+
+/* Smooth theme transitions */
+body {
+  transition: background-color var(--transition-duration) ease-in-out;
+}
+
+/* Force dark mode on html element when dark class is present */
+html.dark {
+  color-scheme: dark;
+}
+
+/* Ensure modals and overlays work properly in dark mode */
+.dark .fixed.inset-0 {
+  background-color: rgba(0, 0, 0, 0.5);
+}

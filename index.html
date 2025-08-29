@@ -4,8 +4,30 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1f2937" media="(prefers-color-scheme: dark)" />
     <title>Student Management Mobile App</title>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+      // Prevent theme flash by applying theme immediately
+      (function() {
+        const theme = localStorage.getItem('theme') || 
+                     (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        
+        const root = document.documentElement;
+        root.classList.remove('light', 'dark');
+        root.classList.add(theme);
+        
+        // Ensure dark class is added for Tailwind
+        if (theme === 'dark') {
+          root.classList.add('dark');
+        }
+        
+        console.log('Initial theme set to:', theme);
+        console.log('Document classes:', root.classList.toString());
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
