@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Award, Calendar, TrendingUp, UserCheck, FileText, CreditCard , Plus, Clock, X, Loader2, AlertCircle, RefreshCw, Gem, GraduationCap, AlertTriangle, User, CheckCircle, XCircle } from 'lucide-react';
 import LoanApplication from './LoanApplication';
-import { uploadBankDocument, getBankDocuments, getLoanPenaltyDetails } from '../../services/api';
+import { uploadBankDocument, getBankDocuments, getLoanPenaltyDetails, getCDPenalties, getCDPenaltyDetails } from '../../services/api';
+import { getRazorpayConfig } from '../../config/razorpay';
 
 interface SocietyMemberDashboardProps {
   onLogout: () => void;
@@ -31,9 +32,51 @@ interface PaymentRequest {
   updatedAt?: string;
 }
 
+// Razorpay types and interfaces
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpayResponse) => void;
+  prefill: {
+    name: string;
+    email: string;
+    contact?: string;
+  };
+  notes: {
+    address: string;
+  };
+  theme: {
+    color: string;
+  };
+  modal: {
+    ondismiss: () => void;
+  };
+}
+
+interface RazorpayResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayOrderResponse {
+  success: boolean;
+  orderId: string;
+  amount: number;
+  currency: string;
+  message?: string;
+}
+
 export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashboardProps) {
   const memberData = JSON.parse(localStorage.getItem('societyMember') || '{}');
   const memberEmail = localStorage.getItem('societyMemberEmail') || '';
+  
+  // Razorpay configuration
+  const razorpayConfig = getRazorpayConfig();
   
   // State for payment requests modal
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -149,6 +192,19 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
   const [selectedLoanForPenalty, setSelectedLoanForPenalty] = useState<any>(null);
   const [penaltyInitialLoading, setPenaltyInitialLoading] = useState(false);
 
+  // State for CD penalties
+  const [cdPenaltyData, setCdPenaltyData] = useState<any>(null);
+  const [cdPenaltyLoading, setCdPenaltyLoading] = useState(false);
+  const [cdPenaltyError, setCdPenaltyError] = useState<string | null>(null);
+  const [selectedPenaltyType, setSelectedPenaltyType] = useState<'loan' | 'cd'>('loan');
+
+  // State for detailed CD penalty modal
+  const [isCDPenaltyDetailsModalOpen, setIsCDPenaltyDetailsModalOpen] = useState(false);
+  const [selectedCDPenalty, setSelectedCDPenalty] = useState<any>(null);
+  const [cdPenaltyDetailsData, setCdPenaltyDetailsData] = useState<any>(null);
+  const [cdPenaltyDetailsLoading, setCdPenaltyDetailsLoading] = useState(false);
+  const [cdPenaltyDetailsError, setCdPenaltyDetailsError] = useState<string | null>(null);
+
   // Debug loans modal state changes
   useEffect(() => {
     console.log('Loans modal state changed:', isLoansModalOpen);
@@ -224,13 +280,6 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       icon: FileText,
       color: 'bg-green-500',
       textColor: 'text-green-600'
-    },
-    {
-      title: 'Get All Bank Documents',
-      value: bankDocumentsData ? `${Array.isArray(bankDocumentsData) ? bankDocumentsData.length : (bankDocumentsData.data ? bankDocumentsData.data.length : 0)} documents` : 'Click to view',
-      icon: FileText,
-      color: 'bg-purple-500',
-      textColor: 'text-purple-600'
     },
     {
       title: 'Penalty',
@@ -336,7 +385,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       formData.append('receiptImage', receiptFile);
 
       // Call the actual API endpoint
-      const response = await fetch('http://localhost:3500/api/receipts/upload', {
+      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/receipts/upload', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -382,7 +431,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       // Call the API to get my receipts
-      const response = await fetch('http://localhost:3500/api/receipts/my-receipts', {
+      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/receipts/my-receipts', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -459,7 +508,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         throw new Error('No authentication token found');
       }
       
-      const response = await fetch(`http://localhost:3500/api/loans/${loanId}`, {
+      const response = await fetch(`https://psmw75hs-3500.inc1.devtunnels.ms/api/loans/${loanId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -532,13 +581,13 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         const processedData = {
           ...data.data,
           accountStatement: data.data.accountStatement ? (() => {
-            const convertedPath = `http://localhost:3500/${data.data.accountStatement.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/new/backend/', '')}`;
+            const convertedPath = `https://psmw75hs-3500.inc1.devtunnels.ms/${data.data.accountStatement.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/new/backend/', '')}`;
             console.log('Original accountStatement path:', data.data.accountStatement);
             console.log('Converted accountStatement URL:', convertedPath);
             return convertedPath;
           })() : null,
           passbook: data.data.passbook ? (() => {
-            const convertedPath = `http://localhost:3500/${data.data.passbook.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/new/backend/', '')}`;
+            const convertedPath = `https://psmw75hs-3500.inc1.devtunnels.ms/${data.data.passbook.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/new/backend/', '')}`;
             console.log('Original passbook path:', data.data.passbook);
             console.log('Converted passbook URL:', convertedPath);
             return convertedPath;
@@ -610,6 +659,52 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       setPenaltyData([]);
     } finally {
       setPenaltyLoading(false);
+    }
+  };
+
+  // Function to fetch CD penalty data
+  const fetchCDPenaltyData = async () => {
+    setCdPenaltyLoading(true);
+    setCdPenaltyError(null);
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const cdPenaltyResponse = await getCDPenalties(token);
+      setCdPenaltyData(cdPenaltyResponse);
+      console.log('CD Penalty data fetched successfully:', cdPenaltyResponse);
+    } catch (error) {
+      console.error('Failed to fetch CD penalty data:', error);
+      setCdPenaltyError(error instanceof Error ? error.message : 'Failed to fetch CD penalty data');
+      setCdPenaltyData(null);
+    } finally {
+      setCdPenaltyLoading(false);
+    }
+  };
+
+  // Function to fetch detailed CD penalty data
+  const fetchCDPenaltyDetails = async (requestId: string) => {
+    setCdPenaltyDetailsLoading(true);
+    setCdPenaltyDetailsError(null);
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const cdPenaltyDetailsResponse = await getCDPenaltyDetails(requestId, token);
+      setCdPenaltyDetailsData(cdPenaltyDetailsResponse);
+      console.log('CD Penalty details fetched successfully:', cdPenaltyDetailsResponse);
+    } catch (error) {
+      console.error('Failed to fetch CD penalty details:', error);
+      setCdPenaltyDetailsError(error instanceof Error ? error.message : 'Failed to fetch CD penalty details');
+      setCdPenaltyDetailsData(null);
+    } finally {
+      setCdPenaltyDetailsLoading(false);
     }
   };
 
@@ -706,7 +801,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         throw new Error('No authentication token found');
       }
       
-      const response = await fetch('http://localhost:3500/api/loans/my-loans', {
+      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/loans/my-loans', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -771,7 +866,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch('http://localhost:3500/api/payment-requests/member/requests', {
+      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/member/requests', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -804,7 +899,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
     }
   };
 
-  // Function to create Razorpay order
+  // Function to create Razorpay order and process payment
   const createRazorpayOrder = async (requestId: string) => {
     // Validate requestId
     if (!requestId || requestId.trim() === '') {
@@ -817,25 +912,36 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
     setPaymentSuccess(null);
     
     try {
+      // Find the payment request to get amount and details
+      const paymentRequest = pendingPayments.find(p => (p.requestId || p.id) === requestId);
+      if (!paymentRequest) {
+        throw new Error('Payment request not found');
+      }
+      
+      const amount = paymentRequest.totalAmount || paymentRequest.amount || 0;
+      if (amount <= 0) {
+        throw new Error('Invalid payment amount');
+      }
+      
+      // Create Razorpay order on your backend
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('No authentication token found');
       }
       
-      const response = await fetch('http://localhost:3500/api/payment-requests/create-razorpay-order', {
+      const response = await fetch(razorpayConfig.createOrderUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          requestId: requestId
+          requestId: requestId,
+          amount: amount * 100, // Convert to paise (Razorpay expects amount in paise)
+          currency: 'INR'
         }),
       });
 
-      console.log('Payment API Response status:', response.status);
-      console.log('Payment API Response headers:', Object.fromEntries(response.headers.entries()));
-      
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}: Failed to create payment order`;
         
@@ -849,7 +955,6 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
             errorMessage = errorData.details;
           }
         } catch (parseError) {
-          // If response can't be parsed as JSON, use status text
           errorMessage = `HTTP ${response.status}: ${response.statusText || 'Server error'}`;
         }
         
@@ -857,15 +962,11 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       const data = await response.json();
-      console.log('Payment API Response data:', data);
+      console.log('Payment order created:', data);
       
-      if (data && data.success) {
-        setPaymentSuccess(`Payment order created successfully for ${requestId}`);
-        // Refresh pending payments to show updated status
-        setTimeout(() => {
-          fetchPendingPayments();
-        }, 2000);
-        console.log('Payment order created:', data);
+      if (data && data.success && data.orderId) {
+        // Initialize Razorpay payment
+        await initializeRazorpayPayment(data.orderId, amount, paymentRequest);
       } else {
         throw new Error(data.message || 'Failed to create payment order');
       }
@@ -896,6 +997,138 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
     }
   };
 
+  // Function to initialize Razorpay payment
+  const initializeRazorpayPayment = async (orderId: string, amount: number, paymentRequest: PaymentRequest) => {
+    try {
+      // Check if Razorpay is loaded
+      if (typeof (window as any).Razorpay === 'undefined') {
+        throw new Error('Razorpay payment gateway is not loaded. Please refresh the page and try again.');
+      }
+
+      const memberName = memberData.name || memberData.fullName || 'Society Member';
+      const memberContact = memberData.phone || memberData.contact || '';
+      
+      const options: RazorpayOptions = {
+        key: razorpayConfig.keyId,
+        amount: Math.round(amount * 100), // Convert to paise
+        currency: razorpayConfig.currency,
+        name: razorpayConfig.companyName,
+        description: `${paymentRequest.paymentType || 'Payment'} - ${paymentRequest.description || 'Society Payment'}`,
+        order_id: orderId,
+        handler: async (response: RazorpayResponse) => {
+          // Handle successful payment
+          await handlePaymentSuccess(response, paymentRequest);
+        },
+        prefill: {
+          name: memberName,
+          email: memberEmail,
+          contact: memberContact
+        },
+        notes: {
+          address: razorpayConfig.companyName
+        },
+        theme: {
+          color: razorpayConfig.themeColor
+        },
+        modal: {
+          ondismiss: () => {
+            console.log('Payment modal dismissed');
+            setPaymentError('Payment was cancelled');
+          }
+        }
+      };
+
+      // Add failure handler
+      (options as any).handler = async (response: RazorpayResponse) => {
+        if (response.razorpay_payment_id) {
+          // Payment successful
+          await handlePaymentSuccess(response, paymentRequest);
+        } else {
+          // Payment failed
+          handlePaymentFailure(response);
+        }
+      };
+
+      // Create Razorpay instance and open payment modal
+      const razorpay = new (window as any).Razorpay(options);
+      razorpay.open();
+      
+    } catch (error) {
+      console.error('Failed to initialize Razorpay payment:', error);
+      setPaymentError(error instanceof Error ? error.message : 'Failed to initialize payment gateway');
+    }
+  };
+
+  // Function to handle successful payment
+  const handlePaymentSuccess = async (response: RazorpayResponse, paymentRequest: PaymentRequest) => {
+    try {
+      setPaymentSuccess('Payment successful! Verifying payment...');
+      setVerifyingPayment(paymentRequest.requestId || paymentRequest.id || '');
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Verify payment with your backend
+      const verifyResponse = await fetch(razorpayConfig.verifyPaymentUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requestId: paymentRequest.requestId || paymentRequest.id,
+          paymentId: response.razorpay_payment_id,
+          orderId: response.razorpay_order_id,
+          signature: response.razorpay_signature,
+          amount: paymentRequest.totalAmount || paymentRequest.amount
+        }),
+      });
+
+      if (!verifyResponse.ok) {
+        throw new Error('Failed to verify payment');
+      }
+
+      const verifyData = await verifyResponse.json();
+      
+      if (verifyData.success) {
+        setPaymentSuccess('Payment verified successfully! Your payment has been processed.');
+        // Refresh pending payments to show updated status
+        setTimeout(() => {
+          fetchPendingPayments();
+        }, 2000);
+      } else {
+        throw new Error(verifyData.message || 'Payment verification failed');
+      }
+    } catch (error) {
+      console.error('Payment verification failed:', error);
+      setPaymentError('Payment verification failed. Please contact support.');
+    } finally {
+      setVerifyingPayment(null);
+    }
+  };
+
+  // Function to handle payment failure
+  const handlePaymentFailure = (error: any) => {
+    console.error('Payment failed:', error);
+    let errorMessage = 'Payment failed. Please try again.';
+    
+    if (error.error) {
+      if (error.error.code === 'PAYMENT_CANCELLED') {
+        errorMessage = 'Payment was cancelled by the user.';
+      } else if (error.error.code === 'PAYMENT_DECLINED') {
+        errorMessage = 'Payment was declined by the bank. Please try a different payment method.';
+      } else if (error.error.code === 'INSUFFICIENT_FUNDS') {
+        errorMessage = 'Insufficient funds. Please check your account balance.';
+      } else if (error.error.description) {
+        errorMessage = error.error.description;
+      }
+    }
+    
+    setPaymentError(errorMessage);
+  };
+
   // Function to verify Razorpay payment
   const verifyRazorpayPayment = async (requestId: string) => {
     // Validate requestId
@@ -919,14 +1152,14 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       const testSignature = 'razorpay_signature_here';
       
       console.log('Verifying Razorpay payment for requestId:', requestId);
-      console.log('Request URL:', 'http://localhost:3500/verify-razorpay-payment');
+      console.log('Request URL:', 'https://psmw75hs-3500.inc1.devtunnels.ms/verify-razorpay-payment');
       console.log('Request body:', { 
         requestId: requestId, 
         paymentId: testPaymentId, 
         signature: testSignature 
       });
       
-      const response = await fetch('http://localhost:3500/api/payment-requests/verify-razorpay-payment', {
+      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/verify-razorpay-payment', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1021,13 +1254,13 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Processing UPI payment for requestId:', requestId);
-      console.log('Request URL:', 'http://localhost:3500/api/payment-requests/process-upi-payment');
+      console.log('Request URL:', 'https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/process-upi-payment');
       console.log('Request body:', { 
         requestId: requestId,
         paymentMethod: 'UPI'
       });
       
-      const response = await fetch('http://localhost:3500/api/payment-requests/process-upi-payment', {
+      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/process-upi-payment', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1113,9 +1346,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching society member profile...');
-      console.log('Request URL:', 'http://localhost:3500/api/society-member/profile');
+      console.log('Request URL:', 'https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/profile');
       
-      const response = await fetch('http://localhost:3500/api/society-member/profile', {
+      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/profile', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1198,7 +1431,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       
-      const response = await fetch('http://localhost:3500/api/society-member/profile', {
+      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/profile', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1280,9 +1513,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Changing password...');
-      console.log('Request URL:', 'http://localhost:3500/api/society-member/change-password');
+      console.log('Request URL:', 'https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/change-password');
       
-      const response = await fetch('http://localhost:3500/api/society-member/change-password', {
+      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/change-password', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1365,9 +1598,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching membership data...');
-      console.log('Request URL:', 'http://localhost:3500/api/society-member/membership');
+      console.log('Request URL:', 'https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/membership');
       
-      const response = await fetch('http://localhost:3500/api/society-member/membership', {
+      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/membership', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1447,9 +1680,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching referrals data...');
-      console.log('Request URL:', 'http://localhost:3500/api/society-member/referrals');
+      console.log('Request URL:', 'https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/referrals');
       
-      const response = await fetch('http://localhost:3500/api/society-member/referrals', {
+      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/referrals', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1529,9 +1762,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching agent codes data...');
-      console.log('Request URL:', 'http://localhost:3500/api/society-member/agent-codes');
+      console.log('Request URL:', 'https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/agent-codes');
       
-      const response = await fetch('http://localhost:3500/api/society-member/agent-codes', {
+      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/agent-codes', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1611,7 +1844,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching pending payments from API...');
-      const response = await fetch('http://localhost:3500/api/payment-requests/member/pending', {
+      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/member/pending', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1860,31 +2093,34 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                 </div>
               </div>
             </div>
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg inline-block mb-2">
-                  <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Share with Friends</p>
-                <p className="text-xs text-blue-500 dark:text-blue-400">Invite others to join</p>
-              </div>
-              <div className="text-center">
-                <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg inline-block mb-2">
-                  <Award className="w-6 h-6 text-green-600 dark:text-green-400" />
-                </div>
-                <p className="text-sm text-green-600 dark:text-green-400 font-medium">Earn Rewards</p>
-                <p className="text-xs text-green-500 dark:text-green-400">Get benefits for referrals</p>
-              </div>
-              <div className="text-center">
-                <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg inline-block mb-2">
-                  <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                </div>
-                <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Grow Community</p>
-                <p className="text-xs text-purple-500 dark:text-purple-400">Help expand our network</p>
-              </div>
-            </div>
+            
           </div>
         )}
+        
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Quick Actions
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {quickActions.map((action, index) => (
+              <button
+                key={index}
+                onClick={action.action}
+                className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-all text-left group"
+              >
+                <div className={`p-3 rounded-lg ${action.color} w-fit mb-3`}>
+                  <action.icon className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                  {action.title}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {action.description}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Profile Section */}
         {profileData && (
@@ -2102,7 +2338,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Document Preview</p>
                       <div className="relative group">
                         <img
-                          src={`http://localhost:3500/${profileData.kycDocuments.aadharCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
+                          src={`https://psmw75hs-3500.inc1.devtunnels.ms/${profileData.kycDocuments.aadharCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
                           alt="Aadhar Card"
                           className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
                           onError={(e) => {
@@ -2138,7 +2374,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Document Preview</p>
                       <div className="relative group">
                         <img
-                          src={`http://localhost:3500/${profileData.kycDocuments.panCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
+                          src={`https://psmw75hs-3500.inc1.devtunnels.ms/${profileData.kycDocuments.panCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
                           alt="PAN Card"
                           className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
                           onError={(e) => {
@@ -2168,7 +2404,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Photo Preview</p>
                       <div className="relative group">
                         <img
-                          src={`http://localhost:3500/${profileData.kycDocuments.profilePhoto.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
+                          src={`https://psmw75hs-3500.inc1.devtunnels.ms/${profileData.kycDocuments.profilePhoto.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
                           alt="Profile Photo"
                           className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
                           onError={(e) => {
@@ -2252,112 +2488,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         )}
 
         {/* Quick Actions */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {quickActions.map((action, index) => (
-              <button
-                key={index}
-                onClick={action.action}
-                className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-all text-left group"
-              >
-                <div className={`p-3 rounded-lg ${action.color} w-fit mb-3`}>
-                  <action.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                  {action.title}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {action.description}
-                </p>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Payment Requests Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Payment Requests
-            </h2>
-            <button className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-              <Plus className="w-4 h-4" />
-              <span>New Request</span>
-            </button>
-          </div>
-          
-          {/* <div className="space-y-4">
-            {mockPaymentRequests.map((request) => (
-              <div key={request.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
-                      <CreditCard className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">
-                        {request.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {request.description}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-gray-900 dark:text-white">
-                      ₹{request.amount.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(request.date).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
-                    {getStatusIcon(request.status)}
-                    <span className="ml-1 capitalize">{request.status}</span>
-                  </span>
-                  
-                  <div className="flex items-center space-x-2">
-                    {request.status === 'pending' && (
-                      <>
-                        <button className="px-3 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                          Approve
-                        </button>
-                        <button className="px-3 py-1 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                          Reject
-                        </button>
-                      </>
-                    )}
-                    {request.status === 'approved' && (
-                      <button className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        Process Payment
-                      </button>
-                    )}
-                    {request.status === 'rejected' && (
-                      <button className="px-3 py-1 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-                        View Details
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {mockPaymentRequests.length === 0 && (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              <CreditCard className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>No payment requests found</p>
-              <p className="text-sm">Create your first payment request to get started</p>
-            </div>
-          )} */}
-        </div>
-
+        
         {/* Recent Activity */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -2529,36 +2660,38 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                {paymentRequests.length > 0 && (
-                  <span>Total Requests: {paymentRequests.length}</span>
-                )}
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={closePaymentModal}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={fetchPaymentRequests}
-                  disabled={loading}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Refreshing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="w-4 h-4" />
-                      <span>Refresh</span>
-                    </>
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {paymentRequests.length > 0 && (
+                    <span>Total Requests: {paymentRequests.length}</span>
                   )}
-                </button>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                  <button
+                    onClick={closePaymentModal}
+                    className="w-full sm:w-auto px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={fetchPaymentRequests}
+                    disabled={loading}
+                    className="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Refreshing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        <span>Refresh</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -2905,7 +3038,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                               </>
                             )}
                           </button>
-                          <button 
+                          {/* <button 
                             onClick={() => processUpiPayment(payment.requestId || payment.id || '')}
                             disabled={processingUpiPayment === (payment.requestId || payment.id)}
                             className={`px-4 py-2 text-white rounded-lg transition-colors flex items-center space-x-2 ${
@@ -2925,8 +3058,8 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                                 <span>UPI Payment</span>
                               </>
                             )}
-                          </button>
-                          <button 
+                          </button> */}
+                          {/* <button 
                             onClick={() => verifyRazorpayPayment(payment.requestId || payment.id || '')}
                             disabled={verifyingPayment === (payment.requestId || payment.id)}
                             className={`px-4 py-2 text-white rounded-lg transition-colors flex items-center space-x-2 ${
@@ -2946,7 +3079,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                                 <span>Verify Payments</span>
                               </>
                             )}
-                          </button>
+                          </button> */}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           Last updated: {payment.updatedAt ? new Date(payment.updatedAt).toLocaleString() : 'N/A'}
@@ -2968,36 +3101,38 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                {pendingPayments.length > 0 && (
-                  <span>Total Pending: {pendingPayments.length}</span>
-                )}
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={closePendingPaymentsModal}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={fetchPendingPayments}
-                  disabled={pendingPaymentsLoading}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-                >
-                  {pendingPaymentsLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Refreshing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="w-4 h-4" />
-                      <span>Refresh</span>
-                    </>
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {pendingPayments.length > 0 && (
+                    <span>Total Pending: {pendingPayments.length}</span>
                   )}
-                </button>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                  <button
+                    onClick={closePendingPaymentsModal}
+                    className="w-full sm:w-auto px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={fetchPendingPayments}
+                    disabled={pendingPaymentsLoading}
+                    className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                  >
+                    {pendingPaymentsLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Refreshing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        <span>Refresh</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -4893,6 +5028,42 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
 
             {/* Modal Content */}
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              {/* Penalty Type Selection */}
+              <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <h4 className="font-medium text-gray-900 dark:text-white mb-3">Select Penalty Type</h4>
+                <div className="flex space-x-6">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      id="loanPenalties"
+                      name="penaltyType"
+                      checked={selectedPenaltyType === 'loan'}
+                      onChange={() => setSelectedPenaltyType('loan')}
+                      className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 focus:ring-red-500 dark:focus:ring-red-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    <label htmlFor="loanPenalties" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Loan Penalties
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      id="cdPenalties"
+                      name="penaltyType"
+                      checked={selectedPenaltyType === 'cd'}
+                      onChange={() => {
+                        setSelectedPenaltyType('cd');
+                        fetchCDPenaltyData();
+                      }}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    <label htmlFor="cdPenalties" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      CD Penalties
+                    </label>
+                  </div>
+                </div>
+              </div>
+
               {/* Error Display */}
               {penaltyError && (
                 <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -4917,135 +5088,304 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
               )}
 
               {/* Penalty List */}
-              {!penaltyLoading && !penaltyInitialLoading && !penaltyError && penaltyData && (
+              {!penaltyLoading && !penaltyInitialLoading && !penaltyError && (
                 <div>
                   {/* Summary Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-red-600 dark:text-red-400">Total Loans with Penalties</p>
-                          <p className="text-2xl font-bold text-red-800 dark:text-red-200">
-                            {penaltyData.length || 0}
-                          </p>
+                    {selectedPenaltyType === 'loan' ? (
+                      <>
+                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-red-600 dark:text-red-400">Total Loans with Penalties</p>
+                              <p className="text-2xl font-bold text-red-800 dark:text-red-200">
+                                {penaltyData ? penaltyData.length || 0 : 0}
+                              </p>
+                            </div>
+                            <AlertTriangle className="w-8 h-8 text-red-500" />
+                          </div>
                         </div>
-                        <AlertTriangle className="w-8 h-8 text-red-500" />
-                      </div>
-                    </div>
-                    <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-orange-600 dark:text-orange-400">Total Penalty Amount</p>
-                          <p className="text-2xl font-bold text-orange-800 dark:text-orange-200">
-                            ₹{penaltyData.reduce((sum: number, p: any) => sum + (p.penaltyAmount || 0), 0).toLocaleString()}
-                          </p>
+                        <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-orange-600 dark:text-orange-400">Total Penalty Amount</p>
+                              <p className="text-2xl font-bold text-orange-800 dark:text-orange-200">
+                                ₹{penaltyData ? penaltyData.reduce((sum: number, p: any) => sum + (p.penaltyAmount || 0), 0).toLocaleString() : '0'}
+                              </p>
+                            </div>
+                            <Clock className="w-8 h-8 text-orange-500" />
+                          </div>
                         </div>
-                        <Clock className="w-8 h-8 text-orange-500" />
-                      </div>
-                    </div>
-                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-green-600 dark:text-green-400">Active Loans</p>
-                          <p className="text-2xl font-bold text-green-800 dark:text-green-200">
-                            {penaltyData.filter((p: any) => p.loanStatus === 'ACTIVE').length || 0}
-                          </p>
+                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-green-600 dark:text-green-400">Active Loans</p>
+                              <p className="text-2xl font-bold text-green-800 dark:text-green-200">
+                                {penaltyData ? penaltyData.filter((p: any) => p.loanStatus === 'ACTIVE').length || 0 : 0}
+                              </p>
+                            </div>
+                            <CheckCircle className="w-8 h-8 text-green-500" />
+                          </div>
                         </div>
-                        <CheckCircle className="w-8 h-8 text-green-500" />
-                      </div>
-                    </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-blue-600 dark:text-blue-400">Total CD Penalties</p>
+                              <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">
+                                {cdPenaltyData?.data?.totalPayments || 0}
+                              </p>
+                            </div>
+                            <AlertTriangle className="w-8 h-8 text-blue-500" />
+                          </div>
+                        </div>
+                        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-purple-600 dark:text-purple-400">Total CD Penalty Amount</p>
+                              <p className="text-2xl font-bold text-purple-800 dark:text-purple-200">
+                                ₹{cdPenaltyData?.data?.totalPenalty || 0}
+                              </p>
+                            </div>
+                            <Clock className="w-8 h-8 text-purple-500" />
+                          </div>
+                        </div>
+                        <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-indigo-600 dark:text-indigo-400">Overdue Payments</p>
+                              <p className="text-2xl font-bold text-indigo-800 dark:text-indigo-200">
+                                {cdPenaltyData?.data?.overduePayments || 0}
+                              </p>
+                            </div>
+                            <CheckCircle className="w-8 h-8 text-indigo-500" />
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Penalty Items */}
-                  <div className="space-y-4">
-                    {penaltyData.map((penalty: any, index: number) => (
-                      <div key={penalty.loanId || index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900">
-                              <AlertTriangle className="w-5 h-5 text-red-600" />
+                  {selectedPenaltyType === 'loan' ? (
+                    <div className="space-y-4">
+                      {penaltyData && penaltyData.map((penalty: any, index: number) => (
+                        <div key={penalty.loanId || index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900">
+                                <AlertTriangle className="w-5 h-5 text-red-600" />
+                              </div>
+                              <div>
+                                <h3 className="font-medium text-gray-900 dark:text-white">Loan ID: {penalty.loanId}</h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  {penalty.loanType} Loan - ₹{penalty.loanAmount?.toLocaleString() || 'N/A'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                                ₹{penalty.penaltyAmount?.toLocaleString() || '0'}
+                              </div>
+                              <div className="text-sm px-2 py-1 rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                Penalty
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Loan Details */}
+                          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                            <div>
+                              <span className="font-medium">Loan Type:</span> {penalty.loanType || 'N/A'}
                             </div>
                             <div>
-                              <h3 className="font-medium text-gray-900 dark:text-white">Loan ID: {penalty.loanId}</h3>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {penalty.loanType} Loan - ₹{penalty.loanAmount?.toLocaleString() || 'N/A'}
-                              </p>
+                              <span className="font-medium">Loan Amount:</span> ₹{penalty.loanAmount?.toLocaleString() || 'N/A'}
+                            </div>
+                            <div>
+                              <span className="font-medium">Loan Status:</span> 
+                              <span className={`ml-1 px-2 py-1 rounded-full text-xs ${
+                                penalty.loanStatus === 'ACTIVE' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                penalty.loanStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                              }`}>
+                                {penalty.loanStatus || 'N/A'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="font-medium">Penalty Amount:</span> ₹{penalty.penaltyAmount?.toLocaleString() || '0'}
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                              ₹{penalty.penaltyAmount?.toLocaleString() || '0'}
+
+                          {/* Penalty Details */}
+                          {penalty.penaltyDetails && (
+                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-4">
+                              <h4 className="font-medium text-white mb-2">Penalty Details</h4>
+                              <div className="grid grid-cols-1 gap-2 text-sm">
+                                {penalty.penaltyDetails.reason && (
+                                  <div>
+                                    <span className="font-medium">Reason:</span> {penalty.penaltyDetails.reason}
+                                  </div>
+                                )}
+                                {penalty.penaltyDetails.date && (
+                                  <div>
+                                    <span className="font-medium">Date:</span> {new Date(penalty.penaltyDetails.date).toLocaleDateString()}
+                                  </div>
+                                )}
+                                {penalty.penaltyDetails.dueDate && (
+                                  <div>
+                                    <span className="font-medium">Due Date:</span> {new Date(penalty.penaltyDetails.dueDate).toLocaleDateString()}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div className="text-sm px-2 py-1 rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                              Penalty
-                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* CD Penalties Loading */}
+                      {cdPenaltyLoading && (
+                        <div className="flex items-center justify-center py-12">
+                          <div className="text-center">
+                            <Loader2 className="w-12 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+                            <p className="text-gray-600 dark:text-gray-400">Loading CD Penalties...</p>
                           </div>
                         </div>
-                        
-                        {/* Loan Details */}
-                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                          <div>
-                            <span className="font-medium">Loan Type:</span> {penalty.loanType || 'N/A'}
-                          </div>
-                          <div>
-                            <span className="font-medium">Loan Amount:</span> ₹{penalty.loanAmount?.toLocaleString() || 'N/A'}
-                          </div>
-                          <div>
-                            <span className="font-medium">Loan Status:</span> 
-                            <span className={`ml-1 px-2 py-1 rounded-full text-xs ${
-                              penalty.loanStatus === 'ACTIVE' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                              penalty.loanStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                              'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-                            }`}>
-                              {penalty.loanStatus || 'N/A'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="font-medium">Penalty Amount:</span> ₹{penalty.penaltyAmount?.toLocaleString() || '0'}
-                          </div>
-                        </div>
+                      )}
 
-                        {/* Penalty Details */}
-                        {penalty.penaltyDetails && (
-                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-4">
-                            <h4 className="font-medium text-gray-900 dark:text-white mb-2">Penalty Details</h4>
-                            <div className="grid grid-cols-1 gap-2 text-sm">
-                              {penalty.penaltyDetails.reason && (
-                                <div>
-                                  <span className="font-medium">Reason:</span> {penalty.penaltyDetails.reason}
+                      {/* CD Penalties Error */}
+                      {cdPenaltyError && (
+                        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                          <div className="flex items-center space-x-2">
+                            <AlertCircle className="w-5 h-5 text-red-500" />
+                            <span className="text-red-800 dark:text-red-200 font-medium">Error Loading CD Penalties</span>
+                          </div>
+                          <p className="text-red-700 dark:text-red-300 mt-1">{cdPenaltyError}</p>
+                        </div>
+                      )}
+
+                                            {/* CD Penalties Data */}
+                      {!cdPenaltyLoading && !cdPenaltyError && cdPenaltyData && (
+                        <div className="space-y-4">
+                          {/* Summary Message */}
+                          {cdPenaltyData.data?.summary?.message && (
+                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                              <div className="flex items-center space-x-2">
+                                <AlertTriangle className="w-5 h-5 text-blue-600" />
+                                <span className="text-blue-800 dark:text-blue-200 font-medium">
+                                  {cdPenaltyData.data.summary.message}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Penalty Breakdown Items */}
+                          {cdPenaltyData.data?.penaltyBreakdown && cdPenaltyData.data.penaltyBreakdown.map((penalty: any, index: number) => (
+                            <div 
+                              key={penalty.requestId || index} 
+                              className="border border-blue-200 dark:border-blue-700 rounded-lg p-6 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer"
+                              onClick={() => {
+                                setSelectedCDPenalty(penalty);
+                                setIsCDPenaltyDetailsModalOpen(true);
+                                fetchCDPenaltyDetails(penalty.requestId);
+                              }}
+                            >
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center space-x-3">
+                                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900">
+                                    <AlertTriangle className="w-5 h-5 text-blue-600" />
+                                  </div>
+                                  <div>
+                                    <h3 className="font-medium text-gray-900 dark:text-white">Request ID: {penalty.requestId}</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                      {penalty.paymentType} Payment - ₹{penalty.amount?.toLocaleString() || 'N/A'}
+                                    </p>
+                                  </div>
                                 </div>
-                              )}
-                              {penalty.penaltyDetails.date && (
-                                <div>
-                                  <span className="font-medium">Date:</span> {new Date(penalty.penaltyDetails.date).toLocaleDateString()}
+                                <div className="text-right">
+                                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                    ₹{penalty.penalty?.penaltyAmount?.toLocaleString() || '0'}
+                                  </div>
+                                  <div className="text-sm px-2 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                    CD Penalty
+                                  </div>
                                 </div>
-                              )}
-                              {penalty.penaltyDetails.dueDate && (
+                              </div>
+                              
+                              {/* Payment Details */}
+                              <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
                                 <div>
-                                  <span className="font-medium">Due Date:</span> {new Date(penalty.penaltyDetails.dueDate).toLocaleDateString()}
+                                  <span className="font-medium">Payment Type:</span> {penalty.paymentType || 'N/A'}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Payment Amount:</span> ₹{penalty.amount?.toLocaleString() || 'N/A'}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Status:</span> 
+                                  <span className={`ml-1 px-2 py-1 rounded-full text-xs ${
+                                    penalty.status === 'ACTIVE' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                    penalty.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                    'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                                  }`}>
+                                    {penalty.status || 'N/A'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="font-medium">Due Date:</span> {penalty.dueDate ? new Date(penalty.dueDate).toLocaleDateString() : 'N/A'}
+                                </div>
+                              </div>
+
+                              {/* Penalty Details */}
+                              {penalty.penalty && (
+                                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
+                                  <h4 className="font-medium text-white mb-2">Penalty Details</h4>
+                                  <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                      <span className="font-medium text-white">Penalty Amount:</span> <span className="text-white">₹{penalty.penalty.penaltyAmount?.toLocaleString() || '0'}</span>
+                                    </div>
+                                    <div>
+                                      <span className="font-medium text-white">Days Late:</span> <span className="text-white">{penalty.penalty.daysLate || '0'}</span>
+                                    </div>
+                                    <div>
+                                      <span className="font-medium text-white">Penalty Per Day:</span> <span className="text-white">₹{penalty.penalty.penaltyPerDay?.toLocaleString() || '0'}</span>
+                                    </div>
+                                    <div>
+                                      <span className="font-medium text-white">Total with Penalty:</span> <span className="text-white">₹{penalty.totalAmountWithPenalty?.toLocaleString() || '0'}</span>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Penalty Message */}
+                                  {penalty.penalty.message && (
+                                    <div className="mt-3 p-3 bg-white dark:bg-gray-700 rounded-lg border border-blue-200 dark:border-blue-700">
+                                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                                        {penalty.penalty.message}
+                                      </p>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
-                          </div>
-                        )}
-
-                        {/* Action Buttons */}
-                        <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            <span className="font-medium">Total Outstanding:</span> ₹{penalty.penaltyAmount?.toLocaleString() || '0'}
-                          </div>
-                          <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                            Pay Penalty
-                          </button>
+                          ))}
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      )}
 
-                  {penaltyData.length === 0 && (
+                      {/* No CD Penalties Found */}
+                      {!cdPenaltyLoading && !cdPenaltyError && !cdPenaltyData && (
+                        <div className="text-center py-12">
+                          <AlertTriangle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                          <p className="text-gray-500 text-lg font-medium mb-2">No CD Penalties Found</p>
+                          <p className="text-gray-400">You have no CD penalty charges at this time.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedPenaltyType === 'loan' && penaltyData && penaltyData.length === 0 && (
                     <div className="text-center py-12">
                       <AlertTriangle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500 text-lg font-medium mb-2">No Penalties Found</p>
+                      <p className="text-gray-500 text-lg font-medium mb-2">No Loan Penalties Found</p>
                       <p className="text-gray-400">You have no penalty charges on your loans at this time.</p>
                     </div>
                   )}
@@ -5055,7 +5395,11 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
               {/* Action Buttons */}
               <div className="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Total Penalty Amount: ₹{penaltyData ? penaltyData.reduce((sum: number, p: any) => sum + (p.penaltyAmount || 0), 0).toLocaleString() : '0'}
+                  {selectedPenaltyType === 'loan' ? (
+                    `Total Loan Penalty Amount: ₹${penaltyData ? penaltyData.reduce((sum: number, p: any) => sum + (p.penaltyAmount || 0), 0).toLocaleString() : '0'}`
+                  ) : (
+                    `Total CD Penalty Amount: ₹${cdPenaltyData?.data?.totalPenalty || 0}`
+                  )}
                 </div>
                 <div className="flex space-x-3">
                   <button
@@ -5065,11 +5409,15 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                     Close
                   </button>
                   <button
-                    onClick={fetchPenaltyData}
-                    disabled={penaltyLoading}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                    onClick={selectedPenaltyType === 'loan' ? fetchPenaltyData : fetchCDPenaltyData}
+                    disabled={selectedPenaltyType === 'loan' ? penaltyLoading : cdPenaltyLoading}
+                    className={`px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2 ${
+                      selectedPenaltyType === 'loan' 
+                        ? 'bg-red-600 hover:bg-red-700' 
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
                   >
-                    {penaltyLoading ? (
+                    {(selectedPenaltyType === 'loan' ? penaltyLoading : cdPenaltyLoading) ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
                         <span>Refreshing...</span>
@@ -5091,7 +5439,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       {/* Upload Receipt Modal */}
       {isUploadReceiptModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-3">
@@ -5207,40 +5555,42 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                 </div>
 
                 {/* Form Actions */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <button
-                    type="button"
-                    onClick={() => setIsUploadReceiptModalOpen(false)}
-                    className="px-6 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <div className="flex space-x-3">
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                     <button
                       type="button"
-                      onClick={() => handleGetReceiptStatus()}
-                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                      onClick={() => setIsUploadReceiptModalOpen(false)}
+                      className="w-full sm:w-auto px-6 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                      <RefreshCw className="w-4 h-4" />
-                      <span>Get Status</span>
+                      Cancel
                     </button>
-                    <button
-                      type="submit"
-                      disabled={receiptLoading || !receiptFile}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-500 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-                    >
-                      {receiptLoading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Uploading...</span>
-                        </>
-                      ) : (
-                        <>
-                          <FileText className="w-4 h-4" />
-                          <span>Upload Receipt</span>
-                        </>
-                      )}
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={() => handleGetReceiptStatus()}
+                        className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        <span>Get Status</span>
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={receiptLoading || !receiptFile}
+                        className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-500 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                      >
+                        {receiptLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="w-4 h-4" />
+                            <span>Upload Receipt</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </form>
@@ -5564,6 +5914,128 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                 loading={updateProfileLoading}
                 onClose={() => setIsUpdateProfileModalOpen(false)}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CD Penalty Details Modal */}
+      {isCDPenaltyDetailsModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <AlertTriangle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    CD Penalty Details
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Detailed information about the selected CD penalty
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsCDPenaltyDetailsModalOpen(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              {/* Loading State */}
+              {cdPenaltyDetailsLoading && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Loader2 className="w-12 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400">Loading CD penalty details...</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Error State */}
+              {cdPenaltyDetailsError && (
+                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="w-5 h-5 text-red-500" />
+                    <span className="text-red-800 dark:text-red-200 font-medium">Error Loading Details</span>
+                  </div>
+                  <p className="text-red-700 dark:text-red-300 mt-1">{cdPenaltyDetailsError}</p>
+                </div>
+              )}
+
+              {/* CD Penalty Details Data */}
+              {!cdPenaltyDetailsLoading && !cdPenaltyDetailsError && cdPenaltyDetailsData && (
+                <div className="space-y-6">
+                  {/* Summary Information */}
+                  {selectedCDPenalty && (
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Payment Summary</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-sm text-blue-600 dark:text-blue-400">Request ID</p>
+                          <p className="text-lg font-semibold text-gray-900 dark:text-white">{selectedCDPenalty.requestId}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-blue-600 dark:text-blue-400">Payment Type</p>
+                          <p className="text-lg font-semibold text-gray-900 dark:text-white">{selectedCDPenalty.paymentType}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-blue-600 dark:text-blue-400">Amount</p>
+                          <p className="text-lg font-semibold text-gray-900 dark:text-white">₹{selectedCDPenalty.amount?.toLocaleString() || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-blue-600 dark:text-blue-400">Status</p>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            selectedCDPenalty.status === 'ACTIVE' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            selectedCDPenalty.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                          }`}>
+                            {selectedCDPenalty.status || 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Request ID: {selectedCDPenalty?.requestId || 'N/A'}
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setIsCDPenaltyDetailsModalOpen(false)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => selectedCDPenalty && fetchCDPenaltyDetails(selectedCDPenalty.requestId)}
+                  disabled={cdPenaltyDetailsLoading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                >
+                  {cdPenaltyDetailsLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Refreshing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      <span>Refresh</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

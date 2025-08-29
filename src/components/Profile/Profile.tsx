@@ -286,7 +286,7 @@ export default function Profile({ studentEmail }: ProfileProps) {
           <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center relative">
             {profileData.profilePhoto ? (
               <img 
-                src={`http://localhost:3500${profileData.profilePhoto}`}
+                src={`https://psmw75hs-3500.inc1.devtunnels.ms${profileData.profilePhoto}`}
                 alt="Profile"
                 className="absolute inset-0 w-full h-full object-cover object-center"
                 onError={(e) => {

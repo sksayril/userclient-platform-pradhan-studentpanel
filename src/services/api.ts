@@ -1,6 +1,6 @@
 export const getKycStatus = async (token: string) => {
   try {
-    const response = await fetch('http://localhost:3500/api/student/kyc-status', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/student/kyc-status', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -21,7 +21,7 @@ export const getKycStatus = async (token: string) => {
 
 export const uploadKycData = async (formData: FormData, token: string) => {
   try {
-    const response = await fetch('http://localhost:3500/api/student/kyc-upload', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/student/kyc-upload', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -41,7 +41,7 @@ export const uploadKycData = async (formData: FormData, token: string) => {
 
 export const loginUser = async (credentials: any) => {
   try {
-    const response = await fetch('http://localhost:3500/api/student/login', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/student/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -63,7 +63,7 @@ export const loginUser = async (credentials: any) => {
 
 export const signupUser = async (formData: any) => {
   try {
-    const response = await fetch('http://localhost:3500/api/student/signup', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/student/signup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -85,7 +85,7 @@ export const signupUser = async (formData: any) => {
 
 export const getStudentProfile = async (token: string) => {
   try {
-    const response = await fetch('http://localhost:3500/api/student/profile', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/student/profile', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -117,7 +117,7 @@ export const updateStudentProfile = async (token: string, profileData: {
   };
 }) => {
   try {
-    const response = await fetch('http://localhost:3500/api/student/profile', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/student/profile', {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -147,7 +147,7 @@ export const getStudentCourses = async (token: string, params?: {
     if (params?.courseType) queryParams.append('courseType', params.courseType);
     if (params?.level) queryParams.append('level', params.level);
     
-    const url = `http://localhost:3500/api/student/courses${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const url = `https://psmw75hs-3500.inc1.devtunnels.ms/api/student/courses${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     
     const response = await fetch(url, {
       method: 'GET',
@@ -169,7 +169,7 @@ export const getStudentCourses = async (token: string, params?: {
 
 export const getStudentCertificates = async (token: string) => {
   try {
-    const response = await fetch('http://localhost:3500/api/student/certificates', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/student/certificates', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -191,7 +191,7 @@ export const getStudentCertificates = async (token: string) => {
 
 export const getStudentMarksheets = async (token: string) => {
   try {
-    const response = await fetch('http://localhost:3500/api/student/marksheets', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/student/marksheets', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -213,7 +213,7 @@ export const getStudentMarksheets = async (token: string) => {
 
 export const getStudentEnrollments = async (token: string) => {
   try {
-    const response = await fetch('http://localhost:3500/api/student/enrollments', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/student/enrollments', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -236,7 +236,7 @@ export const getStudentEnrollments = async (token: string) => {
 // Society Member API Functions
 export const loginSocietyMember = async (credentials: { email?: string; password: string; memberId: string; accountNumber?: string }) => {
   try {
-    const response = await fetch('http://localhost:3500/api/society-member/login', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -278,7 +278,7 @@ export const signupSocietyMember = async (formData: {
   };
 }) => {
   try {
-    const response = await fetch('http://localhost:3500/api/society-member/signup', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/signup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -300,7 +300,7 @@ export const signupSocietyMember = async (formData: {
 
 export const getSocietyMemberKycStatus = async (token: string) => {
   try {
-    const response = await fetch('http://localhost:3500/api/society-member/kyc-status', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/kyc-status', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -320,7 +320,7 @@ export const getSocietyMemberKycStatus = async (token: string) => {
 
 export const uploadSocietyMemberKycData = async (formData: FormData, token: string) => {
   try {
-    const response = await fetch('http://localhost:3500/api/society-member/kyc-upload', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/kyc-upload', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -340,7 +340,7 @@ export const uploadSocietyMemberKycData = async (formData: FormData, token: stri
 
 export const submitLoanApplication = async (loanData: any, token: string) => {
   try {
-    const response = await fetch('http://localhost:3500/api/loans/apply', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/loans/apply', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -363,7 +363,7 @@ export const submitLoanApplication = async (loanData: any, token: string) => {
 
 export const uploadBankDocument = async (formData: FormData, token: string) => {
   try {
-    const response = await fetch('http://localhost:3500/api/society-member/upload-bank-document', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/upload-bank-document', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -385,7 +385,7 @@ export const uploadBankDocument = async (formData: FormData, token: string) => {
 
 export const getBankDocuments = async (token: string) => {
   try {
-    const response = await fetch('http://localhost:3500/api/society-member/bank-documents', {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/bank-documents', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -407,7 +407,7 @@ export const getBankDocuments = async (token: string) => {
 
 export const getLoanPenaltyDetails = async (loanId: string, token: string) => {
   try {
-    const response = await fetch(`http://localhost:3500/api/loans/${loanId}/penalty-details`, {
+    const response = await fetch(`https://psmw75hs-3500.inc1.devtunnels.ms/api/loans/${loanId}/penalty-details`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -423,6 +423,50 @@ export const getLoanPenaltyDetails = async (loanId: string, token: string) => {
     return await response.json();
   } catch (error) {
     console.error('Get Loan Penalty Details API error:', error);
+    throw error;
+  }
+};
+
+export const getCDPenalties = async (token: string) => {
+  try {
+    const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/member/cd-penalties', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch CD penalties.');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Get CD Penalties API error:', error);
+    throw error;
+  }
+};
+
+export const getCDPenaltyDetails = async (requestId: string, token: string) => {
+  try {
+    const response = await fetch(`https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/member/cd-penalties/${requestId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch CD penalty details.');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Get CD Penalty Details API error:', error);
     throw error;
   }
 };
