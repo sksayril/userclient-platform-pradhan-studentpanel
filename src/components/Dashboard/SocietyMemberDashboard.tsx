@@ -265,13 +265,6 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       textColor: 'text-purple-600'
     },
     {
-      title: 'Get All Agent Codes',
-      value: agentCodesData ? `${agentCodesData.length || 0} codes` : 'Click to view',
-      icon: Award,
-      color: 'bg-orange-500',
-      textColor: 'text-orange-600'
-    },
-    {
       title: 'Get Loans',
       value: "Loans",
       icon: Award,
