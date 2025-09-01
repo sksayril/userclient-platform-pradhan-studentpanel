@@ -1,8 +1,9 @@
 // Razorpay Configuration
 export const RAZORPAY_CONFIG = {
-  // Test keys - Replace with your actual Razorpay keys
-  KEY_ID: 'rzp_test_YOUR_TEST_KEY_ID',
-  KEY_SECRET: 'YOUR_TEST_KEY_SECRET',
+  // IMPORTANT: Replace these with your actual Razorpay keys
+  // Get your keys from: https://dashboard.razorpay.com/app/keys
+  KEY_ID: 'rzp_test_EZUuxiOqrDJuQ4', // Replace with your actual test key from Razorpay dashboard
+  KEY_SECRET: '8QSpnXzW7V9jX14YVSJtVwQH', // Replace with your actual secret key
   
   // Production keys (uncomment when going live)
   // KEY_ID: 'rzp_live_YOUR_LIVE_KEY_ID',

@@ -318,34 +318,6 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
     }
   ];
 
-  // Mock payment request data - fallback when API fails
-  // const mockPaymentRequests = [
-  //   {
-  //     id: '1',
-  //     title: 'Monthly Membership Fee',
-  //     amount: 5000,
-  //     status: 'pending',
-  //     date: '2024-06-15',
-  //     description: 'June 2024 membership fee payment'
-  //   },
-  //   {
-  //     id: '2',
-  //     title: 'Event Registration',
-  //     amount: 2500,
-  //     status: 'approved',
-  //     date: '2024-06-10',
-  //     description: 'Annual conference registration fee'
-  //   },
-  //   {
-  //     id: '3',
-  //     title: 'Special Contribution',
-  //     amount: 10000,
-  //     status: 'rejected',
-  //     date: '2024-06-05',
-  //     description: 'Community development fund contribution'
-  //   }
-  // ];
-
   // Function to handle payment request click
   const handlePaymentRequestClick = () => {
     setIsPaymentModalOpen(true);
@@ -933,16 +905,15 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         throw new Error('No authentication token found');
       }
       
-      const response = await fetch(razorpayConfig.createOrderUrl, {
+      // Hit the specific API endpoint for creating payment order
+      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/create-order', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          requestId: requestId,
-          amount: amount * 100, // Convert to paise (Razorpay expects amount in paise)
-          currency: 'INR'
+          requestId: requestId
         }),
       });
 
@@ -951,14 +922,18 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         
         try {
           const errorData = await response.json();
+          console.error('API Error Response:', errorData);
           if (errorData.message) {
             errorMessage = errorData.message;
           } else if (errorData.error) {
             errorMessage = errorData.error;
           } else if (errorData.details) {
             errorMessage = errorData.details;
+          } else if (errorData.reason) {
+            errorMessage = errorData.reason;
           }
         } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
           errorMessage = `HTTP ${response.status}: ${response.statusText || 'Server error'}`;
         }
         
@@ -967,12 +942,65 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
 
       const data = await response.json();
       console.log('Payment order created:', data);
+      console.log('Response structure:', {
+        hasData: !!data,
+        hasSuccess: !!(data && data.success),
+        hasOrderId: !!(data && data.orderId),
+        dataKeys: data ? Object.keys(data) : [],
+        fullData: data
+      });
+      
+      // Handle successful API response (200 status)
+      console.log('✅ Create-order API call successful (200 status)');
+      
+      // Set success message first
+      setPaymentSuccess(`Payment order created successfully! Opening Razorpay gateway...`);
+      
+      // Handle different possible response formats
+      let orderId = null;
       
       if (data && data.success && data.orderId) {
-        // Initialize Razorpay payment
-        await initializeRazorpayPayment(data.orderId, amount, paymentRequest);
+        // Standard success format
+        orderId = data.orderId;
+        console.log('📋 Order ID found in data.orderId:', orderId);
+      } else if (data && data.orderId) {
+        // If orderId exists but success might not be explicitly true
+        orderId = data.orderId;
+        console.log('📋 Order ID found in data.orderId (no success flag):', orderId);
+      } else if (data && data.order && data.order.id) {
+        // If order is nested in order object with id field - NEW FORMAT
+        orderId = data.order.id;
+        console.log('📋 Order ID found in data.order.id:', orderId);
+      } else if (data && data.order && data.order.orderId) {
+        // If order is nested in order object with orderId field
+        orderId = data.order.orderId;
+        console.log('📋 Order ID found in data.order.orderId:', orderId);
+      } else if (data && data.order && data.order.order_id) {
+        // If order is nested in order object with order_id field
+        orderId = data.order.order_id;
+        console.log('📋 Order ID found in data.order.order_id:', orderId);
+      } else if (data && data.data && data.data.orderId) {
+        // If orderId is nested in data object
+        orderId = data.data.orderId;
+        console.log('📋 Order ID found in data.data.orderId:', orderId);
+      } else if (data && data.order_id) {
+        // If orderId is named order_id
+        orderId = data.order_id;
+        console.log('📋 Order ID found in data.order_id:', orderId);
       } else {
-        throw new Error(data.message || 'Failed to create payment order');
+        console.error('❌ Unexpected API response format:', data);
+        console.log('📝 Available keys in response:', Object.keys(data || {}));
+        if (data && data.order) {
+          console.log('📝 Available keys in data.order:', Object.keys(data.order || {}));
+        }
+        throw new Error(data.message || data.error || 'Failed to create payment order - unexpected response format');
+      }
+      
+      if (orderId) {
+        console.log('🚀 Initializing Razorpay payment gateway with order ID:', orderId);
+        await initializeRazorpayPayment(orderId, amount, paymentRequest);
+      } else {
+        throw new Error('Order ID not found in API response');
       }
     } catch (error) {
       console.error('Failed to create payment order:', error);
@@ -1004,13 +1032,35 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
   // Function to initialize Razorpay payment
   const initializeRazorpayPayment = async (orderId: string, amount: number, paymentRequest: PaymentRequest) => {
     try {
+      console.log('🎯 Initializing Razorpay with params:', { orderId, amount, paymentType: paymentRequest.paymentType });
+      
       // Check if Razorpay is loaded
       if (typeof (window as any).Razorpay === 'undefined') {
+        console.error('❌ Razorpay script not loaded');
         throw new Error('Razorpay payment gateway is not loaded. Please refresh the page and try again.');
       }
+      
+      console.log('✅ Razorpay script is loaded');
 
       const memberName = memberData.name || memberData.fullName || 'Society Member';
       const memberContact = memberData.phone || memberData.contact || '';
+      
+      console.log('👤 Member details:', { memberName, memberEmail, memberContact });
+      console.log('⚙️ Razorpay config:', {
+        keyId: razorpayConfig.keyId,
+        currency: razorpayConfig.currency,
+        companyName: razorpayConfig.companyName,
+        themeColor: razorpayConfig.themeColor
+      });
+      
+      // Validate Razorpay key format
+      if (!razorpayConfig.keyId || !razorpayConfig.keyId.startsWith('rzp_')) {
+        throw new Error('Invalid Razorpay Key ID. Please check your configuration in src/config/razorpay.ts');
+      }
+      
+      if (razorpayConfig.keyId.includes('XXXXXXXXXXXXXXXXXX') || razorpayConfig.keyId === 'rzp_test_XXXXXXXXXXXXXXXXXX') {
+        throw new Error('Please replace the placeholder Razorpay keys with your actual keys from https://dashboard.razorpay.com/app/keys');
+      }
       
       const options: RazorpayOptions = {
         key: razorpayConfig.keyId,
@@ -1020,8 +1070,16 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         description: `${paymentRequest.paymentType || 'Payment'} - ${paymentRequest.description || 'Society Payment'}`,
         order_id: orderId,
         handler: async (response: RazorpayResponse) => {
-          // Handle successful payment
-          await handlePaymentSuccess(response, paymentRequest);
+          console.log('💳 Payment handler called with response:', response);
+          if (response.razorpay_payment_id) {
+            // Payment successful
+            console.log('✅ Payment successful:', response);
+            await handlePaymentSuccess(response, paymentRequest);
+          } else {
+            // Payment failed
+            console.log('❌ Payment failed:', response);
+            handlePaymentFailure(response);
+          }
         },
         prefill: {
           name: memberName,
@@ -1036,30 +1094,57 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         },
         modal: {
           ondismiss: () => {
-            console.log('Payment modal dismissed');
-            setPaymentError('Payment was cancelled');
+            console.log('🚪 Payment modal dismissed by user');
+            setPaymentError('Payment was cancelled by user');
+            setProcessingPayment(null);
           }
         }
       };
 
-      // Add failure handler
-      (options as any).handler = async (response: RazorpayResponse) => {
-        if (response.razorpay_payment_id) {
-          // Payment successful
-          await handlePaymentSuccess(response, paymentRequest);
-        } else {
-          // Payment failed
-          handlePaymentFailure(response);
-        }
-      };
+      console.log('🔧 Razorpay options configured:', options);
 
       // Create Razorpay instance and open payment modal
       const razorpay = new (window as any).Razorpay(options);
+      
+      // Add error handler for payment failures
+      razorpay.on('payment.failed', function (response: any) {
+        console.log('💥 Payment failed event:', response);
+        
+        // Check for authentication errors
+        if (response.error && response.error.code === 'BAD_REQUEST_ERROR' && 
+            response.error.description === 'Authentication failed') {
+          setPaymentError('Razorpay authentication failed. Please check your API keys in the configuration.');
+          console.error('❌ Razorpay Authentication Error: Invalid API keys');
+        } else {
+          handlePaymentFailure(response.error);
+        }
+      });
+      
+      console.log('🚀 Opening Razorpay payment gateway...');
       razorpay.open();
       
+      // Update success message to indicate gateway opened
+      setPaymentSuccess('Razorpay payment gateway opened successfully! Complete your payment to proceed.');
+      
     } catch (error) {
-      console.error('Failed to initialize Razorpay payment:', error);
-      setPaymentError(error instanceof Error ? error.message : 'Failed to initialize payment gateway');
+      console.error('❌ Failed to initialize Razorpay payment:', error);
+      
+      let errorMessage = 'Failed to initialize payment gateway';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Authentication failed') || error.message.includes('BAD_REQUEST_ERROR')) {
+          errorMessage = 'Razorpay authentication failed. Please check your API keys configuration.';
+        } else if (error.message.includes('Invalid Razorpay Key ID')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('placeholder Razorpay keys')) {
+          errorMessage = error.message;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setPaymentError(errorMessage);
+      setProcessingPayment(null);
     }
   };
 
@@ -2769,29 +2854,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                 </div>
               )}
 
-              {/* Payment Error Message */}
-              {paymentError && (
-                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
-                      <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                    </div>
-                    <span className="text-red-800 dark:text-red-200 font-medium">
-                      Payment Error
-                    </span>
-                  </div>
-                  <p className="text-red-700 dark:text-red-300 text-sm mt-1">
-                    {paymentError}
-                  </p>
-                  <button
-                    onClick={() => setPaymentError(null)}
-                    className="mt-2 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 text-sm underline"
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              )}
-
+           
               {/* Payment Verification Success Message */}
               {verificationSuccess && (
                 <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
