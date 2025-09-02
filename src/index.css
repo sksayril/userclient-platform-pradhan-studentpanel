@@ -32,3 +32,50 @@ html.dark {
 .dark .fixed.inset-0 {
   background-color: rgba(0, 0, 0, 0.5);
 }
+
+/* Mobile responsive animations */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* Mobile touch improvements */
+@media (max-width: 640px) {
+  /* Improve touch targets */
+  button, [role="button"] {
+    min-height: 44px;
+  }
+  
+  /* Better scrolling on mobile */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Safe area padding for devices with notches */
+  .pb-20 {
+    padding-bottom: max(5rem, env(safe-area-inset-bottom, 5rem));
+  }
+}

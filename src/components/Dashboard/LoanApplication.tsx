@@ -248,7 +248,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
              <Gem className="w-5 h-5 mr-2 text-yellow-600" />
              Gold Loan Details
            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Collateral Type *
@@ -256,7 +256,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
                 <select
                   value={formData.collateralType || ''}
                   onChange={(e) => handleInputChange('collateralType', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-base sm:text-sm"
                   required
                 >
                   <option value="">Select collateral type</option>
@@ -274,7 +274,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
                   step="0.1"
                   value={formData.collateralWeight || ''}
                   onChange={(e) => handleInputChange('collateralWeight', parseFloat(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-base sm:text-sm"
                   placeholder="e.g., 25.5"
                   required
                 />
@@ -288,7 +288,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
                   step="0.1"
                   value={formData.collateralPurity || ''}
                   onChange={(e) => handleInputChange('collateralPurity', parseFloat(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-base sm:text-sm"
                   placeholder="e.g., 91.6"
                   required
                 />
@@ -301,7 +301,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
                   type="number"
                   value={formData.collateralEstimatedValue || ''}
                   onChange={(e) => handleInputChange('collateralEstimatedValue', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-base sm:text-sm"
                   placeholder="e.g., 75000"
                   required
                 />
@@ -317,7 +317,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
               <GraduationCap className="w-5 h-5 mr-2 text-blue-600" />
               Education Loan Details
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Institution *
@@ -326,7 +326,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
                   type="text"
                   value={formData.institution || ''}
                   onChange={(e) => handleInputChange('institution', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-base sm:text-sm"
                   placeholder="e.g., ABC University"
                   required
                 />
@@ -339,12 +339,12 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
                   type="text"
                   value={formData.course || ''}
                   onChange={(e) => handleInputChange('course', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-base sm:text-sm"
                   placeholder="e.g., MBA in Finance"
                   required
                 />
               </div>
-              <div className="md:col-span-2">
+              <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Course Duration *
                 </label>
@@ -352,7 +352,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
                   type="text"
                   value={formData.courseDuration || ''}
                   onChange={(e) => handleInputChange('courseDuration', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-base sm:text-sm"
                   placeholder="e.g., 2 years"
                   required
                 />
@@ -368,7 +368,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
               <AlertTriangle className="w-5 h-5 mr-2 text-red-600" />
               Emergency Loan Details
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Emergency Type *
@@ -376,7 +376,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
                 <select
                   value={formData.emergencyType || ''}
                   onChange={(e) => handleInputChange('emergencyType', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-base sm:text-sm"
                   required
                 >
                   <option value="">Select emergency type</option>
@@ -392,7 +392,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
                 <select
                   value={formData.urgency || ''}
                   onChange={(e) => handleInputChange('urgency', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-base sm:text-sm"
                   required
                 >
                   <option value="">Select urgency level</option>
@@ -412,7 +412,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
               <User className="w-5 h-5 mr-2 text-green-600" />
               Personal Loan Details
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Employment Type *
@@ -420,7 +420,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
                 <select
                   value={formData.employmentType || ''}
                   onChange={(e) => handleInputChange('employmentType', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-base sm:text-sm"
                   required
                 >
                   <option value="">Select employment type</option>
@@ -437,7 +437,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
                   type="number"
                   value={formData.monthlyIncome || ''}
                   onChange={(e) => handleInputChange('monthlyIncome', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-base sm:text-sm"
                   placeholder="e.g., 45000"
                   required
                 />
@@ -450,7 +450,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
                   type="number"
                   value={formData.existingObligations || ''}
                   onChange={(e) => handleInputChange('existingObligations', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-base sm:text-sm"
                   placeholder="e.g., 5000"
                 />
               </div>
@@ -466,35 +466,35 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-              <DollarSign className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-lg shadow-xl max-w-4xl w-full h-[95vh] sm:max-h-[90vh] overflow-y-auto animate-slide-up sm:animate-fade-in">
+        {/* Header - Mobile Responsive */}
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg flex-shrink-0">
+              <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Loan Application</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Apply for a loan based on your needs</p>
+            <div className="min-w-0">
+              <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">Loan Application</h2>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Apply for a loan based on your needs</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Form - Mobile Responsive */}
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex-1 overflow-y-auto">
           {/* Loan Type Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               Select Loan Type *
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {loanTypes.map((type) => (
                 <div
                   key={type.value}
@@ -532,7 +532,7 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
           </div>
 
           {/* Basic Loan Details */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Loan Amount (₹) *
@@ -597,32 +597,34 @@ export default function LoanApplication({ isOpen, onClose, onSubmit }: LoanAppli
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors flex items-center space-x-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Submitting...</span>
-                </>
-              ) : (
-                <>
-                  <DollarSign className="w-4 h-4" />
-                  <span>Submit Application</span>
-                </>
-              )}
-            </button>
+          {/* Action Buttons - Mobile Responsive */}
+          <div className="sticky bottom-0 bg-white dark:bg-gray-800 pt-4 border-t border-gray-200 dark:border-gray-700 -mx-4 sm:-mx-6 px-4 sm:px-6 pb-4 sm:pb-6">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-3 sm:justify-end">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full sm:w-auto px-6 py-3 sm:py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors flex items-center justify-center space-x-2 active:scale-95 min-h-[44px] sm:min-h-0 order-1 sm:order-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  <>
+                    <DollarSign className="w-4 h-4" />
+                    <span>Submit Application</span>
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full sm:w-auto px-4 py-3 sm:py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors active:scale-95 min-h-[44px] sm:min-h-0 order-2 sm:order-1"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </form>
       </div>

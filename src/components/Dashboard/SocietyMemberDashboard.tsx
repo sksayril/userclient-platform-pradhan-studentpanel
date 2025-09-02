@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Award, Calendar, TrendingUp, UserCheck, FileText, CreditCard , Plus, Clock, X, Loader2, AlertCircle, RefreshCw, Gem, GraduationCap, AlertTriangle, User, CheckCircle, XCircle, Sun, Moon } from 'lucide-react';
+import { Users, Award, UserCheck, FileText, CreditCard, Clock, X, Loader2, AlertCircle, RefreshCw, Gem, GraduationCap, AlertTriangle, User, CheckCircle, Sun, Moon } from 'lucide-react';
 import LoanApplication from './LoanApplication';
 import { uploadBankDocument, getBankDocuments, getLoanPenaltyDetails, getCDPenalties, getCDPenaltyDetails } from '../../services/api';
 import { getRazorpayConfig } from '../../config/razorpay';
@@ -2034,74 +2034,88 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 pb-20 sm:pb-8">
+      {/* Mobile-First Header */}
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Society Member Dashboard
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                {profileLoading ? (
-                  <span className="flex items-center space-x-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Loading profile...</span>
-                  </span>
-                ) : profileError ? (
-                  <span className="text-red-600 dark:text-red-400">
-                    Error loading profile: {profileError}
-                  </span>
-                ) : profileData ? (
-                  `Welcome back, ${profileData.firstName || profileData.name || 'Member'} ${profileData.lastName || ''}`
-                ) : (
-                  `Welcome back, ${memberData.firstName} ${memberData.lastName}`
-                )}
-              </p>
+        <div className="px-4 sm:px-6 lg:px-8">
+          {/* Mobile Header Layout */}
+          <div className="py-4 sm:py-6">
+            {/* Top Row - Title and Theme/Logout */}
+            <div className="flex items-center justify-between mb-3 sm:mb-0">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
+                  Society Dashboard
+                </h1>
+              </div>
+              <div className="flex items-center space-x-2 sm:space-x-4 ml-4">
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                >
+                  {theme === 'light' ? (
+                    <Moon className="w-4 h-4 sm:w-5 sm:h-5" />
+                  ) : (
+                    <Sun className="w-4 h-4 sm:w-5 sm:h-5" />
+                  )}
+                </button>
+                <button
+                  onClick={onLogout}
+                  className="px-3 py-2 sm:px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm sm:text-base"
+                >
+                  Logout
+                </button>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Account Number</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {profileData ? (profileData.memberAccountNumber || profileData.memberId || profileData.id || 'N/A') : (memberData.memberAccountNumber || 'N/A')}
+            
+            {/* Welcome Message - Mobile Responsive */}
+            <div className="sm:flex sm:items-center sm:justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                  {profileLoading ? (
+                    <span className="flex items-center space-x-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Loading...</span>
+                    </span>
+                  ) : profileError ? (
+                    <span className="text-red-600 dark:text-red-400 text-xs sm:text-sm">
+                      Error: {profileError}
+                    </span>
+                  ) : profileData ? (
+                    <span className="truncate">
+                      Welcome, {profileData.firstName || profileData.name || 'Member'} {profileData.lastName || ''}
+                    </span>
+                  ) : (
+                    <span className="truncate">
+                      Welcome, {memberData.firstName} {memberData.lastName}
+                    </span>
+                  )}
                 </p>
               </div>
-              <button
-                onClick={toggleTheme}
-                className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-              >
-                {theme === 'light' ? (
-                  <Moon className="w-5 h-5" />
-                ) : (
-                  <Sun className="w-5 h-5" />
-                )}
-              </button>
-              {/* Debug info - remove this after testing */}
-              <div className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
-                Theme: {theme}
+              
+              {/* Account Number - Hidden on very small screens, shown on mobile+ */}
+              <div className="mt-2 sm:mt-0 sm:ml-4 flex-shrink-0">
+                <div className="text-right">
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Account Number</p>
+                  <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white font-mono">
+                    {profileData ? (profileData.memberAccountNumber || profileData.memberId || profileData.id || 'N/A') : (memberData.memberAccountNumber || 'N/A')}
+                  </p>
+                </div>
               </div>
-              <button
-                onClick={onLogout}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Logout
-              </button>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-8 max-w-7xl mx-auto">
+        {/* Stats Grid - Mobile Responsive */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {stats.map((stat, index) => (
             <div 
               key={index} 
-              className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 ${
-                (stat.title === 'Get All Agent Codes' || stat.title === 'Get Loans' || stat.title === 'Get All Loans Details' || stat.title === 'Upload Bank Document' || stat.title === 'Get All Bank Documents') ? 'cursor-pointer hover:shadow-md transition-all duration-200' : ''
+              className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6 ${
+                (stat.title === 'Get All Agent Codes' || stat.title === 'Get Loans' || stat.title === 'Get All Loans Details' || stat.title === 'Upload Bank Document' || stat.title === 'Get All Bank Documents') ? 'cursor-pointer hover:shadow-md transition-all duration-200 active:scale-95' : ''
               }`}
               onClick={stat.title === 'Get All Agent Codes' ? () => {
                 setIsAgentCodesModalOpen(true);
@@ -2120,11 +2134,11 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
               } : undefined}
             >
               <div className="flex items-center">
-                <div className={`p-3 rounded-lg ${stat.color}`}>
-                  <stat.icon className="w-6 h-6 text-white" />
+                <div className={`p-2 sm:p-3 rounded-lg ${stat.color} flex-shrink-0`}>
+                  <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <div className="ml-4 flex-1">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                <div className="ml-3 sm:ml-4 flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
                     {stat.title}
                   </p>
                   {stat.title === 'Get All Agent Codes' && agentCodesLoading ? (
@@ -2140,9 +2154,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       <span className="text-sm text-gray-500">Loading...</span>
                     </div>
                   ) : stat.title === 'Get All Loans Details' && loansError ? (
-                    <p className="text-sm text-red-500">Error loading</p>
+                    <p className="text-xs sm:text-sm text-red-500">Error loading</p>
                   ) : (
-                    <p className={`text-lg font-semibold ${stat.textColor}`}>
+                    <p className={`text-sm sm:text-lg font-semibold ${stat.textColor} truncate`}>
                       {stat.value}
                     </p>
                   )}
@@ -2152,30 +2166,30 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
           ))}
         </div>
 
-        {/* Referral Code Section - Enhanced */}
+        {/* Referral Code Section - Mobile Responsive */}
         {referralsData && referralsData.referralCode && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-6 mb-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-blue-500 rounded-xl">
-                  <Award className="w-8 h-8 text-white" />
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="p-2 sm:p-3 bg-blue-500 rounded-xl flex-shrink-0">
+                  <Award className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-blue-800 dark:text-blue-200">
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-xl font-bold text-blue-800 dark:text-blue-200">
                     Your Referral Code
                   </h3>
-                  <p className="text-blue-600 dark:text-blue-400 text-sm">
+                  <p className="text-blue-600 dark:text-blue-400 text-xs sm:text-sm">
                     Share this code with others to earn rewards
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-600">
-                  <p className="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">
+              <div className="w-full sm:w-auto">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 border border-blue-200 dark:border-blue-600">
+                  <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-medium mb-2 text-center sm:text-left">
                     Referral Code
                   </p>
-                  <div className="flex items-center space-x-3">
-                    <p className="text-2xl font-bold text-blue-800 dark:text-blue-200 font-mono tracking-wider">
+                  <div className="flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3">
+                    <p className="text-lg sm:text-2xl font-bold text-blue-800 dark:text-blue-200 font-mono tracking-wider">
                       {referralsData.referralCode}
                     </p>
                     <button
@@ -2185,40 +2199,40 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                           // You could add a toast notification here
                         }
                       }}
-                      className="p-2 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                      className="p-2 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors active:scale-95"
                       title="Copy referral code"
                     >
-                      <FileText className="w-5 h-5" />
+                      <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                   </div>
-                  <p className="text-xs text-blue-500 dark:text-blue-400 mt-2">
-                    Click the icon to copy
+                  <p className="text-xs text-blue-500 dark:text-blue-400 mt-2 text-center sm:text-left">
+                    Tap icon to copy
                   </p>
                 </div>
               </div>
             </div>
-            
           </div>
         )}
         
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
+        {/* Quick Actions - Mobile Responsive */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6 mb-6 sm:mb-8">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Quick Actions
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {quickActions.map((action, index) => (
               <button
                 key={index}
                 onClick={action.action}
-                className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-all text-left group"
+                className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-all text-left group active:scale-95"
               >
-                <div className={`p-3 rounded-lg ${action.color} w-fit mb-3`}>
-                  <action.icon className="w-6 h-6 text-white" />
+                <div className={`p-2 sm:p-3 rounded-lg ${action.color} w-fit mb-3`}>
+                  <action.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1 text-sm sm:text-base">
                   {action.title}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                   {action.description}
                 </p>
               </button>
@@ -2226,24 +2240,24 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
           </div>
         </div>
 
-        {/* Profile Section */}
+        {/* Profile Section - Mobile Responsive */}
         {profileData && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6 mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Profile Information
               </h2>
-              <div className="flex items-center space-x-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
                 <button
                   onClick={() => setIsUpdateProfileModalOpen(true)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                  className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base active:scale-95"
                 >
                   <Users className="w-4 h-4" />
                   <span>Update Profile</span>
                 </button>
                 <button
                   onClick={() => setIsChangePasswordModalOpen(true)}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                  className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base active:scale-95"
                 >
                   <FileText className="w-4 h-4" />
                   <span>Change Password</span>
@@ -2251,7 +2265,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                 <button
                   onClick={fetchProfileData}
                   disabled={profileLoading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                  className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base active:scale-95"
                 >
                   {profileLoading ? (
                     <>
@@ -2261,7 +2275,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                   ) : (
                     <>
                       <RefreshCw className="w-4 h-4" />
-                      <span>Refresh Profile</span>
+                      <span>Refresh</span>
                     </>
                   )}
                 </button>
@@ -2282,7 +2296,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
               {/* Personal Information */}
               <div className="space-y-4">
                 <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-2">
@@ -2419,13 +2433,13 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
           </div>
         )}
 
-        {/* KYC Documents Section */}
+        {/* KYC Documents Section - Mobile Responsive */}
         {profileData && profileData.kycDocuments && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6 mb-6 sm:mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">
               KYC Documents
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {profileData.kycDocuments.aadharCard && (
                 <div className="space-y-4">
                   <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-2">
@@ -2444,7 +2458,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                         <img
                           src={`https://psmw75hs-3500.inc1.devtunnels.ms/${profileData.kycDocuments.aadharCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
                           alt="Aadhar Card"
-                          className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
+                          className="w-full h-32 sm:h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
                           onError={(e) => {
                             e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTEwQzExMC40NTcgMTEwIDExOSAxMDEuNDU3IDExOSA5MUMxMTkgODAuNTQzIDExMC40NTcgNzIgMTAwIDcyQzg5LjU0MyA3MiA4MSA4MC41NDMgODEgOTFDODEgMTAxLjQ1NyA4OS41NDMgMTEwIDEwMCAxMTBaIiBmaWxsPSIjOUI5QkEwIi8+CjxwYXRoIGQ9Ik0xMDAgMTI4QzExMC40NTcgMTI4IDExOSAxMTkuNDU3IDExOSAxMDlDMTE5IDk4LjU0MyAxMTAuNDU3IDkwIDEwMCA5MEM4OS41NDMgOTAgODEgOTguNTQzIDgxIDEwOUM4MSAxMTkuNDU3IDg5LjU0MyAxMjggMTAwIDEyOFoiIGZpbGw9IiM5QjlCQTAiLz4KPC9zdmc+';
                           }}
@@ -2480,7 +2494,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                         <img
                           src={`https://psmw75hs-3500.inc1.devtunnels.ms/${profileData.kycDocuments.panCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
                           alt="PAN Card"
-                          className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
+                          className="w-full h-32 sm:h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
                           onError={(e) => {
                             e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTEwQzExMC40NTcgMTEwIDExOSAxMDEuNDU3IDExOSA5MUMxMTkgODAuNTQzIDExMC40NTcgNzIgMTAwIDcyQzg5LjU0MyA3MiA4MSA4MC41NDMgODEgOTFDODEgMTAxLjQ1NyA4OS41NDMgMTEwIDEwMCAxMTBaIiBmaWxsPSIjOUI5QkEwIi8+CjxwYXRoIGQ9Ik0xMDAgMTI4QzExMC40NTcgMTI4IDExOSAxMTkuNDU3IDExOSAxMDlDMTE5IDk4LjU0MyAxMTAuNDU3IDkwIDEwMCA5MEM4OS41NDMgOTAgODEgOTguNTQzIDgxIDEwOUM4MSAxMTkuNDU3IDg5LjU0MyAxMjggMTAwIDEyOFoiIGZpbGw9IiM5QjlCQTAiLz4KPC9zdmc+';
                           }}
@@ -2510,7 +2524,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                         <img
                           src={`https://psmw75hs-3500.inc1.devtunnels.ms/${profileData.kycDocuments.profilePhoto.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
                           alt="Profile Photo"
-                          className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
+                          className="w-full h-32 sm:h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
                           onError={(e) => {
                             e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTEwQzExMC40NTcgMTEwIDExOSAxMDEuNDU3IDExOSA5MUMxMTkgODAuNTQzIDExMC40NTcgNzIgMTAwIDcyQzg5LjU0MyA3MiA4MSA4MC41NDMgODEgOTFDODEgMTAxLjQ1NyA4OS41NDMgMTEwIDEwMCAxMTBaIiBmaWxsPSIjOUI5QkEwIi8+CjxwYXRoIGQ9Ik0xMDAgMTI4QzExMC40NTcgMTI4IDExOSAxMTkuNDU3IDExOSAxMDlDMTE5IDk4LjU0MyAxMTAuNDU3IDkwIDEwMCA5MEM4OS41NDMgOTAgODEgOTguNTQzIDgxIDEwOUM4MSAxMTkuNDU3IDg5LjU0MyAxMjggMTAwIDEyOFoiIGZpbGw9IiM5QjlCQTAiLz4KPC9zdmc+';
                           }}
@@ -2530,13 +2544,13 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
               )}
             </div>
             
-            {/* Document Status Summary */}
-            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            {/* Document Status Summary - Mobile Responsive */}
+            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <div className="flex items-center space-x-2 mb-3">
-                <FileText className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" />
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Document Status</h4>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                   <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -2560,13 +2574,13 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
           </div>
         )}
 
-        {/* Surety Contact Section */}
+        {/* Surety Contact Section - Mobile Responsive */}
         {profileData && profileData.emergencyContact && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6 mb-6 sm:mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">
               Surety Contact
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Name</p>
@@ -2593,12 +2607,12 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
 
         {/* Quick Actions */}
         
-        {/* Recent Activity */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        {/* Recent Activity - Mobile Responsive */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Recent Activity
           </h2>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
                 <UserCheck className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -2636,35 +2650,35 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         </div>
       </div>
 
-      {/* Payment Requests Modal */}
+      {/* Payment Requests Modal - Mobile Responsive */}
       {isPaymentModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
-                  <CreditCard className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-4xl h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slide-up sm:animate-fade-in">
+            {/* Modal Header - Mobile Responsive */}
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex-shrink-0">
+                  <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                <div className="min-w-0">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">
                     Payment Requests
                   </h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                     View and manage your payment requests
                   </p>
                 </div>
               </div>
               <button
                 onClick={closePaymentModal}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+            {/* Modal Content - Mobile Responsive */}
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1">
               {/* Error Display */}
               {error && (
                 <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -2719,30 +2733,30 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                         </div>
                       </div>
                       
-                      <div className="flex items-center justify-between">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status || 'pending')}`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status || 'pending')} w-fit`}>
                           {getStatusIcon(request.status || 'pending')}
                           <span className="ml-1 capitalize">{request.status || 'pending'}</span>
                         </span>
                         
-                        <div className="flex items-center space-x-2">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
                           {(request.status || 'pending') === 'pending' && (
                             <>
-                              <button className="px-3 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                              <button className="flex-1 sm:flex-none px-4 py-2 sm:px-3 sm:py-1 text-sm sm:text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors active:scale-95 min-h-[44px] sm:min-h-0">
                                 Approve
                               </button>
-                              <button className="px-3 py-1 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                              <button className="flex-1 sm:flex-none px-4 py-2 sm:px-3 sm:py-1 text-sm sm:text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors active:scale-95 min-h-[44px] sm:min-h-0">
                                 Reject
                               </button>
                             </>
                           )}
                           {(request.status || 'pending') === 'approved' && (
-                            <button className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <button className="w-full sm:w-auto px-4 py-2 sm:px-3 sm:py-1 text-sm sm:text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors active:scale-95 min-h-[44px] sm:min-h-0">
                               Process Payment
                             </button>
                           )}
                           {(request.status || 'pending') === 'rejected' && (
-                            <button className="px-3 py-1 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                            <button className="w-full sm:w-auto px-4 py-2 sm:px-3 sm:py-1 text-sm sm:text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors active:scale-95 min-h-[44px] sm:min-h-0">
                               View Details
                             </button>
                           )}
@@ -2763,25 +2777,25 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
               )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+            {/* Modal Footer - Mobile Responsive */}
+            <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex-shrink-0">
+              <div className="flex flex-col gap-3">
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
                   {paymentRequests.length > 0 && (
                     <span>Total Requests: {paymentRequests.length}</span>
                   )}
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={closePaymentModal}
-                    className="w-full sm:w-auto px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="flex-1 px-4 py-3 sm:py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-center active:scale-95"
                   >
                     Close
                   </button>
                   <button
                     onClick={fetchPaymentRequests}
                     disabled={loading}
-                    className="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                    className="flex-1 px-4 py-3 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 active:scale-95"
                   >
                     {loading ? (
                       <>
@@ -2802,35 +2816,35 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         </div>
       )}
 
-      {/* Pending Payments Modal */}
+      {/* Pending Payments Modal - Mobile Responsive */}
       {isPendingPaymentsModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                  <CreditCard className="w-6 h-6 text-green-600 dark:text-green-400" />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-4xl h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slide-up sm:animate-fade-in">
+            {/* Modal Header - Mobile Responsive */}
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg flex-shrink-0">
+                  <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                <div className="min-w-0">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">
                     Pending Payments
                   </h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                     View and manage your pending payment obligations
                   </p>
                 </div>
               </div>
               <button
                 onClick={closePendingPaymentsModal}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+            {/* Modal Content - Mobile Responsive */}
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1">
               {/* Payment Success Message */}
               {paymentSuccess && (
                 <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
@@ -3096,13 +3110,13 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                         </div>
                       )}
 
-                      {/* Action Buttons */}
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center space-x-3">
+                      {/* Action Buttons - Mobile Responsive */}
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3 sm:space-y-0">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-3">
                           <button 
                             onClick={() => createRazorpayOrder(payment.requestId || payment.id || '')}
                             disabled={processingPayment === (payment.requestId || payment.id)}
-                            className={`px-4 py-2 text-white rounded-lg transition-colors flex items-center space-x-2 ${
+                            className={`w-full sm:w-auto px-4 py-3 sm:py-2 text-white rounded-lg transition-colors flex items-center justify-center space-x-2 active:scale-95 min-h-[44px] sm:min-h-0 ${
                               processingPayment === (payment.requestId || payment.id)
                                 ? 'bg-gray-400 cursor-not-allowed'
                                 : 'bg-green-600 hover:bg-green-700'
@@ -3163,7 +3177,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                             )}
                           </button> */}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 text-center sm:text-right mt-2 sm:mt-0">
                           Last updated: {payment.updatedAt ? new Date(payment.updatedAt).toLocaleString() : 'N/A'}
                         </div>
                       </div>
@@ -3182,25 +3196,25 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
               )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+            {/* Modal Footer - Mobile Responsive */}
+            <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex-shrink-0">
+              <div className="flex flex-col gap-3">
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
                   {pendingPayments.length > 0 && (
                     <span>Total Pending: {pendingPayments.length}</span>
                   )}
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={closePendingPaymentsModal}
-                    className="w-full sm:w-auto px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="flex-1 px-4 py-3 sm:py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-center active:scale-95"
                   >
                     Close
                   </button>
                   <button
                     onClick={fetchPendingPayments}
                     disabled={pendingPaymentsLoading}
-                    className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                    className="flex-1 px-4 py-3 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 active:scale-95"
                   >
                     {pendingPaymentsLoading ? (
                       <>
@@ -3221,10 +3235,10 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         </div>
       )}
 
-      {/* Membership Details Modal */}
+      {/* Membership Details Modal - Mobile Responsive */}
       {isMembershipModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-4xl h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slide-up sm:animate-fade-in">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-3">
@@ -5518,10 +5532,10 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         </div>
       )}
 
-      {/* Upload Receipt Modal */}
+      {/* Upload Receipt Modal - Mobile Responsive */}
       {isUploadReceiptModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-lg h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slide-up sm:animate-fade-in">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-3">
@@ -5636,21 +5650,14 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                   )}
                 </div>
 
-                {/* Form Actions */}
+                {/* Form Actions - Mobile Responsive */}
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setIsUploadReceiptModalOpen(false)}
-                      className="w-full sm:w-auto px-6 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                       <button
                         type="button"
                         onClick={() => handleGetReceiptStatus()}
-                        className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                        className="flex-1 px-6 py-3 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 active:scale-95 min-h-[44px] sm:min-h-0"
                       >
                         <RefreshCw className="w-4 h-4" />
                         <span>Get Status</span>
@@ -5658,7 +5665,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       <button
                         type="submit"
                         disabled={receiptLoading || !receiptFile}
-                        className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-500 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                        className="flex-1 px-6 py-3 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 active:scale-95 min-h-[44px] sm:min-h-0"
                       >
                         {receiptLoading ? (
                           <>
@@ -5673,6 +5680,13 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                         )}
                       </button>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsUploadReceiptModalOpen(false)}
+                      className="w-full px-6 py-3 sm:py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors active:scale-95 min-h-[44px] sm:min-h-0"
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </div>
               </form>
@@ -5681,10 +5695,10 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         </div>
       )}
 
-      {/* Receipt Status Modal */}
+      {/* Receipt Status Modal - Mobile Responsive */}
       {isReceiptStatusModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-4xl h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slide-up sm:animate-fade-in">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-3">
@@ -5852,10 +5866,10 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         onSubmit={handleLoanApplicationSubmit}
       />
 
-      {/* Change Password Modal */}
+      {/* Change Password Modal - Mobile Responsive */}
       {isChangePasswordModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-md h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slide-up sm:animate-fade-in">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-3">
@@ -5926,10 +5940,10 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         </div>
       )}
 
-      {/* Update Profile Modal */}
+      {/* Update Profile Modal - Mobile Responsive */}
       {isUpdateProfileModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-4xl h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slide-up sm:animate-fade-in">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-3">
@@ -6163,7 +6177,7 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onSubmit, loadi
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 p-4 sm:p-6">
       {/* Current Password */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -6174,7 +6188,7 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onSubmit, loadi
             type={showPasswords.current ? 'text' : 'password'}
             value={formData.currentPassword}
             onChange={(e) => handleInputChange('currentPassword', e.target.value)}
-            className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
+            className="w-full px-3 py-3 sm:py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-800 dark:text-white text-base sm:text-sm"
             placeholder="Enter current password"
             required
           />
@@ -6202,7 +6216,7 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onSubmit, loadi
             type={showPasswords.new ? 'text' : 'password'}
             value={formData.newPassword}
             onChange={(e) => handleInputChange('newPassword', e.target.value)}
-            className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
+            className="w-full px-3 py-3 sm:py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-800 dark:text-white text-base sm:text-sm"
             placeholder="Enter new password"
             required
           />
@@ -6220,19 +6234,19 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onSubmit, loadi
         </div>
       </div>
 
-      {/* Form Actions */}
-      <div className="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+      {/* Form Actions - Mobile Responsive */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700 space-y-3 sm:space-y-0">
         <button
           type="button"
           onClick={onClose}
-          className="px-6 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          className="px-6 py-3 sm:py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors order-2 sm:order-1 active:scale-95"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+          className="px-6 py-3 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 order-1 sm:order-2 active:scale-95"
         >
           {loading ? (
             <>
@@ -6322,13 +6336,13 @@ const UpdateProfileForm: React.FC<UpdateProfileFormProps> = ({ profileData, onSu
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 p-4 sm:p-6 overflow-y-auto">
       {/* Personal Information */}
-      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6">
+      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Personal Information
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               First Name
@@ -6337,7 +6351,7 @@ const UpdateProfileForm: React.FC<UpdateProfileFormProps> = ({ profileData, onSu
               type="text"
               value={formData.firstName}
               onChange={(e) => handleInputChange('firstName', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
+              className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-800 dark:text-white text-base sm:text-sm"
               placeholder="Enter first name"
             />
           </div>
