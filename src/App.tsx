@@ -88,12 +88,12 @@ function App() {
     navigate('/');
   };
 
-  const handleLogin = (email: string, type: 'student' | 'society-member') => {
+  const handleLogin = (identifier: string, type: 'student' | 'society-member') => {
     // The token is already set in the Login component
     if (type === 'student') {
-      localStorage.setItem('studentEmail', email);
+      localStorage.setItem('studentEmail', identifier);
     } else {
-      localStorage.setItem('societyMemberEmail', email);
+      localStorage.setItem('societyMemberEmail', identifier);
     }
     setIsAuthenticated(true);
     setUserType(type);
@@ -245,7 +245,7 @@ function App() {
 // The main layout for the authenticated part of the app
 function MainLayout({ onLogout }: { onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState<AppTab>('dashboard');
-  const studentEmail = localStorage.getItem('studentEmail') || '';
+  const studentIdentifier = localStorage.getItem('studentEmail') || '';
   const userType = localStorage.getItem('userType') as 'student' | 'society-member' | null;
 
   const renderContent = () => {
@@ -261,11 +261,11 @@ function MainLayout({ onLogout }: { onLogout: () => void }) {
       case 'courses':
         return <Courses />;
       case 'fees':
-        return <Fees studentEmail={studentEmail} />;
+        return <Fees studentEmail={studentIdentifier} />;
       case 'batch':
-        return <Batch studentEmail={studentEmail} />;
+        return <Batch studentEmail={studentIdentifier} />;
       case 'profile':
-        return <Profile studentEmail={studentEmail} />;
+        return <Profile studentEmail={studentIdentifier} />;
       default:
         return <Dashboard onLogout={onLogout} />;
     }

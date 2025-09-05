@@ -39,7 +39,7 @@ export const uploadKycData = async (formData: FormData, token: string) => {
   }
 };
 
-export const loginUser = async (credentials: any) => {
+export const loginUser = async (credentials: { email?: string; studentId?: string; password: string }) => {
   try {
     const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/student/login', {
       method: 'POST',
