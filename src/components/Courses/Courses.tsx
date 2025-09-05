@@ -137,7 +137,7 @@ export default function Courses() {
       console.log('🎓 Creating course enrollment order for:', course.title);
       
       // Create order for course enrollment
-      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/create-order', {
+      const response = await fetch('https://api.padyai.co.in/api/payment-requests/create-order', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -320,7 +320,7 @@ export default function Courses() {
       }
 
       // Verify payment and complete enrollment
-      const verifyResponse = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/courses/verify-enrollment-payment', {
+      const verifyResponse = await fetch('https://api.padyai.co.in/api/courses/verify-enrollment-payment', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

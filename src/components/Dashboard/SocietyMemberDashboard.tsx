@@ -361,7 +361,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       formData.append('receiptImage', receiptFile);
 
       // Call the actual API endpoint
-      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/receipts/upload', {
+      const response = await fetch('https://api.padyai.co.in/api/receipts/upload', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -407,7 +407,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       // Call the API to get my receipts
-      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/receipts/my-receipts', {
+      const response = await fetch('https://api.padyai.co.in/api/receipts/my-receipts', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -484,7 +484,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         throw new Error('No authentication token found');
       }
       
-      const response = await fetch(`https://psmw75hs-3500.inc1.devtunnels.ms/api/loans/${loanId}`, {
+      const response = await fetch(`https://api.padyai.co.in/api/loans/${loanId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -557,13 +557,13 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         const processedData = {
           ...data.data,
           accountStatement: data.data.accountStatement ? (() => {
-            const convertedPath = `https://psmw75hs-3500.inc1.devtunnels.ms/${data.data.accountStatement.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/new/backend/', '')}`;
+            const convertedPath = `https://api.padyai.co.in/${data.data.accountStatement.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/new/backend/', '')}`;
             console.log('Original accountStatement path:', data.data.accountStatement);
             console.log('Converted accountStatement URL:', convertedPath);
             return convertedPath;
           })() : null,
           passbook: data.data.passbook ? (() => {
-            const convertedPath = `https://psmw75hs-3500.inc1.devtunnels.ms/${data.data.passbook.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/new/backend/', '')}`;
+            const convertedPath = `https://api.padyai.co.in/${data.data.passbook.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/new/backend/', '')}`;
             console.log('Original passbook path:', data.data.passbook);
             console.log('Converted passbook URL:', convertedPath);
             return convertedPath;
@@ -777,7 +777,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         throw new Error('No authentication token found');
       }
       
-      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/loans/my-loans', {
+      const response = await fetch('https://api.padyai.co.in/api/loans/my-loans', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -842,7 +842,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/member/requests', {
+      const response = await fetch('https://api.padyai.co.in/api/payment-requests/member/requests', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -906,7 +906,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
       
       // Hit the specific API endpoint for creating payment order
-      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/create-order', {
+      const response = await fetch('https://api.padyai.co.in/api/payment-requests/create-order', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1241,14 +1241,14 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       const testSignature = 'razorpay_signature_here';
       
       console.log('Verifying Razorpay payment for requestId:', requestId);
-      console.log('Request URL:', 'https://psmw75hs-3500.inc1.devtunnels.ms/verify-razorpay-payment');
+      console.log('Request URL:', 'https://api.padyai.co.in/verify-razorpay-payment');
       console.log('Request body:', { 
         requestId: requestId, 
         paymentId: testPaymentId, 
         signature: testSignature 
       });
       
-      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/verify-razorpay-payment', {
+      const response = await fetch('https://api.padyai.co.in/api/payment-requests/verify-razorpay-payment', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1343,13 +1343,13 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Processing UPI payment for requestId:', requestId);
-      console.log('Request URL:', 'https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/process-upi-payment');
+      console.log('Request URL:', 'https://api.padyai.co.in/api/payment-requests/process-upi-payment');
       console.log('Request body:', { 
         requestId: requestId,
         paymentMethod: 'UPI'
       });
       
-      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/process-upi-payment', {
+      const response = await fetch('https://api.padyai.co.in/api/payment-requests/process-upi-payment', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1435,9 +1435,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching society member profile...');
-      console.log('Request URL:', 'https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/profile');
+      console.log('Request URL:', 'https://api.padyai.co.in/api/society-member/profile');
       
-      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/profile', {
+      const response = await fetch('https://api.padyai.co.in/api/society-member/profile', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1520,7 +1520,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       
-      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/profile', {
+      const response = await fetch('https://api.padyai.co.in/api/society-member/profile', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1602,9 +1602,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Changing password...');
-      console.log('Request URL:', 'https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/change-password');
+      console.log('Request URL:', 'https://api.padyai.co.in/api/society-member/change-password');
       
-      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/change-password', {
+      const response = await fetch('https://api.padyai.co.in/api/society-member/change-password', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1687,9 +1687,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching membership data...');
-      console.log('Request URL:', 'https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/membership');
+      console.log('Request URL:', 'https://api.padyai.co.in/api/society-member/membership');
       
-      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/membership', {
+      const response = await fetch('https://api.padyai.co.in/api/society-member/membership', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1769,9 +1769,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching referrals data...');
-      console.log('Request URL:', 'https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/referrals');
+      console.log('Request URL:', 'https://api.padyai.co.in/api/society-member/referrals');
       
-      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/referrals', {
+      const response = await fetch('https://api.padyai.co.in/api/society-member/referrals', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1851,9 +1851,9 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching agent codes data...');
-      console.log('Request URL:', 'https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/agent-codes');
+      console.log('Request URL:', 'https://api.padyai.co.in/api/society-member/agent-codes');
       
-      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/society-member/agent-codes', {
+      const response = await fetch('https://api.padyai.co.in/api/society-member/agent-codes', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1933,7 +1933,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
       }
 
       console.log('Fetching pending payments from API...');
-      const response = await fetch('https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/member/pending', {
+      const response = await fetch('https://api.padyai.co.in/api/payment-requests/member/pending', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -2456,7 +2456,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Document Preview</p>
                       <div className="relative group">
                         <img
-                          src={`https://psmw75hs-3500.inc1.devtunnels.ms/${profileData.kycDocuments.aadharCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
+                          src={`https://api.padyai.co.in/${profileData.kycDocuments.aadharCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
                           alt="Aadhar Card"
                           className="w-full h-32 sm:h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
                           onError={(e) => {
@@ -2492,7 +2492,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Document Preview</p>
                       <div className="relative group">
                         <img
-                          src={`https://psmw75hs-3500.inc1.devtunnels.ms/${profileData.kycDocuments.panCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
+                          src={`https://api.padyai.co.in/${profileData.kycDocuments.panCard.document.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
                           alt="PAN Card"
                           className="w-full h-32 sm:h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
                           onError={(e) => {
@@ -2522,7 +2522,7 @@ export default function SocietyMemberDashboard({ onLogout }: SocietyMemberDashbo
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Photo Preview</p>
                       <div className="relative group">
                         <img
-                          src={`https://psmw75hs-3500.inc1.devtunnels.ms/${profileData.kycDocuments.profilePhoto.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
+                          src={`https://api.padyai.co.in/${profileData.kycDocuments.profilePhoto.replace(/\\/g, '/').replace('C:/Users/sksay/Desktop/pradhan/pradhan-schoolmanagement-apis/', '')}`}
                           alt="Profile Photo"
                           className="w-full h-32 sm:h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:scale-105 transition-transform duration-200"
                           onError={(e) => {

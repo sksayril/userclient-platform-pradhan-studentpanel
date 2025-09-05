@@ -20,8 +20,8 @@ export const RAZORPAY_CONFIG = {
   THEME_COLOR: '#10B981',
   
   // API endpoints
-  CREATE_ORDER_URL: 'https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/create-razorpay-order',
-  VERIFY_PAYMENT_URL: 'https://psmw75hs-3500.inc1.devtunnels.ms/api/payment-requests/verify-razorpay-payment',
+  CREATE_ORDER_URL: 'https://api.padyai.co.in/api/payment-requests/create-razorpay-order',
+  VERIFY_PAYMENT_URL: 'https://api.padyai.co.in/api/payment-requests/verify-razorpay-payment',
 };
 
 // Environment-based configuration
